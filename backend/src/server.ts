@@ -4,6 +4,9 @@ import dotenv from "dotenv";
 
 import authRoutes from "./routes/authRoutes";
 import db from "./config/db";
+import applicationRoutes from "./routes/applicationRoutes";
+
+
 
 dotenv.config();
 
@@ -24,6 +27,7 @@ app.use(express.json());
 // ===============================
 
 app.use("/api/auth", authRoutes);
+app.use("/api/applications", applicationRoutes);
 
 
 // ===============================

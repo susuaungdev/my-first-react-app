@@ -15,12 +15,43 @@ export const register = async (
         const { name, email, password } = req.body || {};
 
 
-        // Check required fields
-        if (!name || !email || !password) {
-            return res.status(400).json({
-                message: "All fields are required"
-            });
-        }
+            // Check required fields
+            if (!name || !email || !password) {
+                return res.status(400).json({
+                    message: "All fields are required"
+                });
+            }
+
+
+            // Clean user input
+            const cleanName = name.trim();
+            const cleanEmail = email.trim().toLowerCase();
+
+
+            // Validate name
+            if (cleanName.length < 2) {
+                return res.status(400).json({
+                    message: "Name must be at least 2 characters long"
+                });
+            }
+
+
+            // Validate email format
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+            if (!emailRegex.test(cleanEmail)) {
+                return res.status(400).json({
+                    message: "Please enter a valid email address"
+                });
+            }
+
+
+            // Validate password
+            if (password.length < 8) {
+                return res.status(400).json({
+                    message: "Password must be at least 8 characters long"
+                });
+            }
 
 
         // Hash password
@@ -34,9 +65,9 @@ export const register = async (
         `;
 
 
-        await db.execute(sql, [
-            name,
-            email,
+       await db.execute(sql, [
+            cleanName,
+            cleanEmail,
             hashedPassword
         ]);
 
@@ -79,26 +110,40 @@ export const login = async (
         const { email, password } = req.body || {};
 
 
-        if (!email || !password) {
-            return res.status(400).json({
-                message: "Email and password are required"
-            });
-        }
+            // Check required fields
+            if (!email || !password) {
+                return res.status(400).json({
+                    message: "Email and password are required"
+                });
+            }
+
+
+            // Clean email
+            const cleanEmail = email.trim().toLowerCase();
+
+
+            // Validate email format
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+            if (!emailRegex.test(cleanEmail)) {
+                return res.status(400).json({
+                    message: "Please enter a valid email address"
+                });
+            }
 
 
         // Find user by email
         const [rows]: any = await db.execute(
             "SELECT * FROM users WHERE email = ?",
-            [email]
+            [cleanEmail]
         );
 
 
         if (rows.length === 0) {
-            return res.status(400).json({
-                message: "User not found"
+            return res.status(401).json({
+                message: "Invalid email or password"
             });
         }
-
 
         const user = rows[0];
 
@@ -111,11 +156,10 @@ export const login = async (
 
 
         if (!passwordMatch) {
-            return res.status(400).json({
-                message: "Invalid password"
+            return res.status(401).json({
+                message: "Invalid email or password"
             });
         }
-
 
         // Create JWT token
         const token = jwt.sign(

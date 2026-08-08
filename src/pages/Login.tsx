@@ -1,204 +1,261 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
-
 function Login() {
+  const navigate = useNavigate();
 
-    const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-    const [error, setError] = useState("");
-    const [loading, setLoading] = useState(false);
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
 
+    setError("");
 
-    const handleLogin = async (e: React.FormEvent) => {
+    // Frontend validation
+    if (!email || !password) {
+      setError("Please enter your email and password.");
+      return;
+    }
 
-        e.preventDefault();
+    try {
+      setLoading(true);
 
-        setError("");
+      const response = await fetch(
+        "http://localhost:5000/api/auth/login",
+        {
+          method: "POST",
 
+          headers: {
+            "Content-Type": "application/json",
+          },
 
-        // Frontend validation
-        if (!email || !password) {
-            setError("Please enter your email and password.");
-            return;
+          body: JSON.stringify({
+            email,
+            password,
+          }),
         }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.message || "Login failed.");
+        return;
+      }
+
+      // Store JWT token
+      localStorage.setItem(
+        "token",
+        data.token
+      );
+
+      // Store user information
+      localStorage.setItem(
+        "user",
+        JSON.stringify(data.user)
+      );
+
+      // Go to dashboard
+      navigate("/dashboard");
+
+    } catch (error) {
+
+      console.error(error);
+
+      setError(
+        "Unable to connect to the server."
+      );
+
+    } finally {
+
+      setLoading(false);
+
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/40 to-indigo-50">
+
+      {/* Top Navigation */}
+      <header className="border-b border-slate-200/80 bg-white/90 backdrop-blur">
+        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
+
+          <Link
+            to="/"
+            className="text-2xl font-bold tracking-tight text-blue-600"
+          >
+            CareerFlow
+          </Link>
+
+          <p className="text-sm text-slate-500">
+            New to CareerFlow?{" "}
+
+            <Link
+              to="/register"
+              className="font-semibold text-blue-600 transition hover:text-blue-700"
+            >
+              Create account
+            </Link>
+          </p>
+
+        </div>
+      </header>
 
 
-        try {
+      {/* Main Content */}
+      <main className="flex h-[calc(100vh-64px)] items-center justify-center px-5 py-5">
 
-            setLoading(true);
+        <div className="w-full max-w-md">
 
+          {/* Heading */}
+          <div className="mb-5 text-center">
 
-            const response = await fetch(
-                "http://localhost:5000/api/auth/login",
-                {
-                    method: "POST",
+            <div className="mb-3 inline-flex rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-600">
+              Welcome back to CareerFlow
+            </div>
 
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
+            <h1 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-[34px]">
+              Sign in to your account
+            </h1>
 
-                    body: JSON.stringify({
-                        email,
-                        password
-                    })
-                }
-            );
+            <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-slate-500">
+              Continue managing your resumes, job applications, and career progress.
+            </p>
 
-
-            const data = await response.json();
+          </div>
 
 
-            if (!response.ok) {
+          {/* Login Card */}
+          <div className="rounded-2xl border border-slate-200 bg-white p-7 shadow-lg shadow-slate-200/50">
 
-                setError(data.message || "Login failed.");
+            {/* Error */}
+            {error && (
+              <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-red-200 bg-red-50 px-3.5 py-3 text-sm text-red-700">
 
-                return;
-            }
+                <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-red-100 text-xs font-bold">
+                  !
+                </div>
 
-
-            // Store JWT token
-            localStorage.setItem(
-                "token",
-                data.token
-            );
-
-
-            // Store user information
-            localStorage.setItem(
-                "user",
-                JSON.stringify(data.user)
-            );
-
-
-            // Go to dashboard
-            navigate("/dashboard");
-
-
-        } catch (error) {
-
-            console.error(error);
-
-            setError(
-                "Unable to connect to the server."
-            );
-
-        } finally {
-
-            setLoading(false);
-
-        }
-
-    };
-
-
-    return (
-
-        <div className="min-h-screen flex items-center justify-center bg-gray-100">
-
-            <div className="w-full max-w-md bg-white p-8 rounded-2xl shadow-lg">
-
-                <h1 className="text-3xl font-bold text-center mb-2">
-                    Welcome Back
-                </h1>
-
-                <p className="text-gray-500 text-center mb-6">
-                    Login to your CareerFlow account
+                <p>
+                  {error}
                 </p>
 
-
-                {error && (
-
-                    <div className="mb-4 rounded-lg bg-red-100 px-4 py-3 text-red-700">
-
-                        {error}
-
-                    </div>
-
-                )}
+              </div>
+            )}
 
 
-                <form
-                    onSubmit={handleLogin}
-                    className="space-y-5"
+            <form
+              onSubmit={handleLogin}
+              className="space-y-4"
+            >
+
+              {/* Email */}
+              <div>
+
+                <label
+                  htmlFor="email"
+                  className="mb-1.5 block text-sm font-semibold text-slate-700"
                 >
+                  Email address
+                </label>
 
-                    <div>
+                <input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) =>
+                    setEmail(e.target.value)
+                  }
+                  placeholder="you@example.com"
+                  autoComplete="email"
+                  className="w-full rounded-xl border border-slate-300 bg-slate-50/40 px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 hover:border-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                />
 
-                        <label className="block mb-2 font-medium">
-                            Email
-                        </label>
-
-                        <input
-                            type="email"
-                            value={email}
-                            onChange={(e) =>
-                                setEmail(e.target.value)
-                            }
-                            placeholder="you@example.com"
-                            className="w-full rounded-lg border px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-
-                    </div>
+              </div>
 
 
-                    <div>
+              {/* Password */}
+              <div>
 
-                        <label className="block mb-2 font-medium">
-                            Password
-                        </label>
+                <div className="mb-1.5 flex items-center justify-between">
 
-                        <input
-                            type="password"
-                            value={password}
-                            onChange={(e) =>
-                                setPassword(e.target.value)
-                            }
-                            placeholder="••••••••"
-                            className="w-full rounded-lg border px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500"
-                        />
+                  <label
+                    htmlFor="password"
+                    className="text-sm font-semibold text-slate-700"
+                  >
+                    Password
+                  </label>
 
-                    </div>
+                  <span className="text-xs text-slate-400">
+                    Secure login
+                  </span>
 
+                </div>
 
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="w-full rounded-lg bg-blue-600 py-3 font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
+                <input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) =>
+                    setPassword(e.target.value)
+                  }
+                  placeholder="Enter your password"
+                  autoComplete="current-password"
+                  className="w-full rounded-xl border border-slate-300 bg-slate-50/40 px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 hover:border-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                />
 
-                        {loading
-                            ? "Logging in..."
-                            : "Login"
-                        }
-
-                    </button>
-
-                </form>
+              </div>
 
 
-                <p className="mt-6 text-center text-gray-600">
+              {/* Login Button */}
+              <button
+                type="submit"
+                disabled={loading}
+                className="mt-1 w-full rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white shadow-md shadow-blue-600/20 transition duration-200 hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-lg hover:shadow-blue-600/25 focus:outline-none focus:ring-4 focus:ring-blue-200 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
+              >
+                {loading
+                  ? "Signing in..."
+                  : "Sign in"
+                }
+              </button>
 
-                    Don't have an account?{" "}
+            </form>
 
-                    <Link
-                        to="/register"
-                        className="font-semibold text-blue-600 hover:underline"
-                    >
-                        Register
-                    </Link>
 
-                </p>
+            {/* Register Link */}
+            <div className="mt-5 border-t border-slate-100 pt-4">
+
+              <p className="text-center text-sm text-slate-500">
+                Don't have a CareerFlow account?{" "}
+
+                <Link
+                  to="/register"
+                  className="font-semibold text-blue-600 transition hover:text-blue-700"
+                >
+                  Create one
+                </Link>
+              </p>
 
             </div>
 
+          </div>
+
+
+          {/* Bottom Text */}
+          <p className="mt-4 text-center text-xs text-slate-400">
+            Your career workspace, all in one place.
+          </p>
+
         </div>
 
-    );
-}
+      </main>
 
+    </div>
+  );
+}
 
 export default Login;
