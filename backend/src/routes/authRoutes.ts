@@ -1,36 +1,18 @@
 import { Router } from "express";
+import {
+    register,
+    login
+} from "../controllers/authController";
 
 const router = Router();
 
-// Register API
-router.post("/register", (req, res) => {
 
-    const { name, email, password } = req.body || {};
-
-    res.json({
-        message: "Register API working",
-        user: {
-            name,
-            email
-        }
-    });
-
-});
+// Register
+router.post("/register", register);
 
 
-// Login API
-router.post("/login", (req, res) => {
-
-    const { email, password } = req.body || {};
-
-    res.json({
-        message: "Login API working",
-        user: {
-            email
-        }
-    });
-
-});
+// Login
+router.post("/login", login);
 
 
 export default router;

@@ -1,125 +1,203 @@
 import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+
 
 function Login() {
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+    const navigate = useNavigate();
 
-  const [showPassword, setShowPassword] = useState(false);
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
 
-  const [error, setError] = useState("");
-
-
-  function handleSubmit(e: React.FormEvent) {
-
-    e.preventDefault();
+    const [error, setError] = useState("");
+    const [loading, setLoading] = useState(false);
 
 
-    if (!email || !password) {
-      setError("Please enter email and password");
-      return;
-    }
+    const handleLogin = async (e: React.FormEvent) => {
+
+        e.preventDefault();
+
+        setError("");
 
 
-    setError("");
+        // Frontend validation
+        if (!email || !password) {
+            setError("Please enter your email and password.");
+            return;
+        }
 
 
-    console.log({
-      email,
-      password
-    });
+        try {
 
-  }
+            setLoading(true);
 
 
-  return (
+            const response = await fetch(
+                "http://localhost:5000/api/auth/login",
+                {
+                    method: "POST",
 
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
 
-
-      <div className="bg-white p-8 rounded-xl shadow-md w-full max-w-md">
-
-
-        <h1 className="text-3xl font-bold text-center">
-          Welcome Back
-        </h1>
-
-
-        <p className="text-center text-gray-500 mt-2">
-          Login to your CareerFlow account
-        </p>
-
+                    body: JSON.stringify({
+                        email,
+                        password
+                    })
+                }
+            );
 
 
-        {error && (
-          <p className="text-red-500 text-center mt-4">
-            {error}
-          </p>
-        )}
+            const data = await response.json();
 
 
+            if (!response.ok) {
 
-        <form
-          onSubmit={handleSubmit}
-          className="mt-8 space-y-4"
-        >
+                setError(data.message || "Login failed.");
 
-
-          <input
-            type="email"
-            placeholder="Email Address"
-            value={email}
-            onChange={(e)=>setEmail(e.target.value)}
-            className="w-full border p-3 rounded-lg"
-          />
+                return;
+            }
 
 
-
-          <div className="relative">
-
-
-            <input
-              type={showPassword ? "text" : "password"}
-              placeholder="Password"
-              value={password}
-              onChange={(e)=>setPassword(e.target.value)}
-              className="w-full border p-3 rounded-lg"
-            />
+            // Store JWT token
+            localStorage.setItem(
+                "token",
+                data.token
+            );
 
 
-            <button
-              type="button"
-              onClick={()=>setShowPassword(!showPassword)}
-              className="absolute right-3 top-3 text-blue-600"
-            >
-
-              {showPassword ? "Hide" : "Show"}
-
-            </button>
+            // Store user information
+            localStorage.setItem(
+                "user",
+                JSON.stringify(data.user)
+            );
 
 
-          </div>
+            // Go to dashboard
+            navigate("/dashboard");
 
 
+        } catch (error) {
 
-          <button
-            type="submit"
-            className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700"
-          >
-            Login
-          </button>
+            console.error(error);
+
+            setError(
+                "Unable to connect to the server."
+            );
+
+        } finally {
+
+            setLoading(false);
+
+        }
+
+    };
 
 
-        </form>
+    return (
+
+        <div className="min-h-screen flex items-center justify-center bg-gray-100">
+
+            <div className="w-full max-w-md bg-white p-8 rounded-2xl shadow-lg">
+
+                <h1 className="text-3xl font-bold text-center mb-2">
+                    Welcome Back
+                </h1>
+
+                <p className="text-gray-500 text-center mb-6">
+                    Login to your CareerFlow account
+                </p>
 
 
-      </div>
+                {error && (
+
+                    <div className="mb-4 rounded-lg bg-red-100 px-4 py-3 text-red-700">
+
+                        {error}
+
+                    </div>
+
+                )}
 
 
-    </div>
+                <form
+                    onSubmit={handleLogin}
+                    className="space-y-5"
+                >
 
-  )
+                    <div>
 
+                        <label className="block mb-2 font-medium">
+                            Email
+                        </label>
+
+                        <input
+                            type="email"
+                            value={email}
+                            onChange={(e) =>
+                                setEmail(e.target.value)
+                            }
+                            placeholder="you@example.com"
+                            className="w-full rounded-lg border px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+
+                    </div>
+
+
+                    <div>
+
+                        <label className="block mb-2 font-medium">
+                            Password
+                        </label>
+
+                        <input
+                            type="password"
+                            value={password}
+                            onChange={(e) =>
+                                setPassword(e.target.value)
+                            }
+                            placeholder="••••••••"
+                            className="w-full rounded-lg border px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+
+                    </div>
+
+
+                    <button
+                        type="submit"
+                        disabled={loading}
+                        className="w-full rounded-lg bg-blue-600 py-3 font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+
+                        {loading
+                            ? "Logging in..."
+                            : "Login"
+                        }
+
+                    </button>
+
+                </form>
+
+
+                <p className="mt-6 text-center text-gray-600">
+
+                    Don't have an account?{" "}
+
+                    <Link
+                        to="/register"
+                        className="font-semibold text-blue-600 hover:underline"
+                    >
+                        Register
+                    </Link>
+
+                </p>
+
+            </div>
+
+        </div>
+
+    );
 }
 
 
