@@ -11,6 +11,7 @@ import Dashboard from "./pages/Dashboard";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 import Applications from "./pages/Applications";
+import Profile from "./pages/Profile";
 
 function App() {
   return (
@@ -51,8 +52,17 @@ function App() {
           }
         />
 
-      </Routes>
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          }
+        />
 
+      </Routes>
+          
     </BrowserRouter>
   );
 }

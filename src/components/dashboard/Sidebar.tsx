@@ -101,6 +101,10 @@ function Sidebar({
           </button>
 
           <button
+            onClick={() => {
+              navigate("/profile");
+              onClose();
+            }}
             className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-medium text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
           >
             <span>⚙</span>

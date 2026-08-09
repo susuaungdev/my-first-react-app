@@ -1,9 +1,14 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import StatCard from "../components/dashboard/StatCard";
 import Sidebar from "../components/dashboard/Sidebar";
 import DashboardHeader from "../components/dashboard/DashboardHeader";
+
+import {
+  getDashboardSummary,
+  type RecentApplication,
+} from "../services/dashboardService";
 
 function Dashboard() {
   const navigate = useNavigate();
@@ -16,12 +21,81 @@ function Dashboard() {
     ? JSON.parse(storedUser)
     : null;
 
+  const [totalApplications, setTotalApplications] = useState(0);
+  const [interviews, setInterviews] = useState(0);
+  const [offers, setOffers] = useState(0);
+  const [resumes, setResumes] = useState(0);
+
+  const [recentApplications, setRecentApplications] =
+    useState<RecentApplication[]>([]);
+
+  const [loadingDashboard, setLoadingDashboard] = useState(true);
+
+  const [dashboardError, setDashboardError] = useState("");
+
+
+  useEffect(() => {
+    const loadDashboard = async () => {
+      try {
+        setLoadingDashboard(true);
+        setDashboardError("");
+
+        const data = await getDashboardSummary();
+
+        setTotalApplications(
+          data.summary.totalApplications
+        );
+
+        setInterviews(
+          data.summary.interviews
+        );
+
+        setOffers(
+          data.summary.offers
+        );
+
+        setResumes(
+          data.summary.resumes
+        );
+
+        setRecentApplications(
+          data.recentApplications
+        );
+
+      } catch (error) {
+
+        console.error(
+          "Failed to load dashboard summary:",
+          error
+        );
+
+        if (error instanceof Error) {
+          setDashboardError(error.message);
+        } else {
+          setDashboardError(
+            "Failed to load dashboard."
+          );
+        }
+
+      } finally {
+
+        setLoadingDashboard(false);
+
+      }
+    };
+
+    loadDashboard();
+
+  }, []);
+
+
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
 
     navigate("/login");
   };
+
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -48,7 +122,7 @@ function Dashboard() {
       </header>
 
 
-      {/* SIDEBAR COMPONENT */}
+      {/* SIDEBAR */}
       <Sidebar
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
@@ -60,12 +134,21 @@ function Dashboard() {
       {/* MAIN CONTENT */}
       <div className="lg:ml-64">
 
-       <DashboardHeader user={user} />
+        <DashboardHeader user={user} />
+
 
         {/* PAGE CONTENT */}
         <main className="px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
 
           <div className="mx-auto max-w-7xl">
+
+            {/* ERROR */}
+            {dashboardError && (
+              <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                {dashboardError}
+              </div>
+            )}
+
 
             {/* WELCOME SECTION */}
             <section className="mb-8">
@@ -95,6 +178,7 @@ function Dashboard() {
 
 
                   <button
+                    onClick={() => navigate("/applications")}
                     className="w-full rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 sm:w-auto"
                   >
                     + Add Application
@@ -114,7 +198,7 @@ function Dashboard() {
 
                 <StatCard
                   title="Total Applications"
-                  value={0}
+                  value={totalApplications}
                   description="Applications submitted"
                   icon="01"
                   iconClassName="bg-blue-50 text-blue-600"
@@ -122,7 +206,7 @@ function Dashboard() {
 
                 <StatCard
                   title="Interviews"
-                  value={0}
+                  value={interviews}
                   description="Interview opportunities"
                   icon="02"
                   iconClassName="bg-amber-50 text-amber-600"
@@ -130,7 +214,7 @@ function Dashboard() {
 
                 <StatCard
                   title="Offers"
-                  value={0}
+                  value={offers}
                   description="Job offers received"
                   icon="03"
                   iconClassName="bg-emerald-50 text-emerald-600"
@@ -138,7 +222,7 @@ function Dashboard() {
 
                 <StatCard
                   title="Resumes"
-                  value={0}
+                  value={resumes}
                   description="Resume versions created"
                   icon="04"
                   iconClassName="bg-purple-50 text-purple-600"
@@ -170,34 +254,122 @@ function Dashboard() {
                   </div>
 
 
-                  <button className="text-sm font-semibold text-blue-600 hover:text-blue-700">
+                  <button
+                    onClick={() => navigate("/applications")}
+                    className="text-sm font-semibold text-blue-600 hover:text-blue-700"
+                  >
                     View all
                   </button>
 
                 </div>
 
 
-                {/* EMPTY STATE */}
-                <div className="flex min-h-64 flex-col items-center justify-center px-6 py-10 text-center">
+                {loadingDashboard ? (
 
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
-                    +
+                  <div className="flex min-h-64 items-center justify-center">
+
+                    <div className="text-center">
+
+                      <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-blue-600" />
+
+                      <p className="mt-3 text-sm text-slate-500">
+                        Loading dashboard...
+                      </p>
+
+                    </div>
+
                   </div>
 
-                  <h4 className="mt-4 font-semibold text-slate-900">
-                    No applications yet
-                  </h4>
+                ) : recentApplications.length === 0 ? (
 
-                  <p className="mt-2 max-w-sm text-sm leading-6 text-slate-500">
-                    Add your first job application and start tracking
-                    your progress through the hiring process.
-                  </p>
+                  <div className="flex min-h-64 flex-col items-center justify-center px-6 py-10 text-center">
 
-                  <button className="mt-5 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
-                    Add application
-                  </button>
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
+                      +
+                    </div>
 
-                </div>
+                    <h4 className="mt-4 font-semibold text-slate-900">
+                      No applications yet
+                    </h4>
+
+                    <p className="mt-2 max-w-sm text-sm leading-6 text-slate-500">
+                      Add your first job application and start tracking
+                      your progress through the hiring process.
+                    </p>
+
+                    <button
+                      onClick={() => navigate("/applications")}
+                      className="mt-5 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                    >
+                      Add application
+                    </button>
+
+                  </div>
+
+                ) : (
+
+                  <div className="divide-y divide-slate-100">
+
+                    {recentApplications.map(
+                      (application) => (
+
+                        <button
+                          key={application.id}
+                          onClick={() =>
+                            navigate("/applications")
+                          }
+                          className="flex w-full flex-col gap-3 px-6 py-5 text-left transition hover:bg-slate-50 sm:flex-row sm:items-center sm:justify-between"
+                        >
+
+                          <div>
+
+                            <p className="font-semibold text-slate-900">
+                              {application.job_title}
+                            </p>
+
+                            <p className="mt-1 text-sm text-slate-500">
+                              {application.company}
+                            </p>
+
+                            {application.location && (
+                              <p className="mt-1 text-xs text-slate-400">
+                                {application.location}
+                              </p>
+                            )}
+
+                          </div>
+
+
+                          <span
+                            className={`
+                              w-fit rounded-full px-3 py-1 text-xs font-semibold
+
+                              ${
+                                application.status === "Offer"
+                                  ? "bg-emerald-50 text-emerald-700"
+                                  : application.status === "Rejected"
+                                  ? "bg-red-50 text-red-700"
+                                  : application.status.includes("Interview")
+                                  ? "bg-amber-50 text-amber-700"
+                                  : application.status === "Applied"
+                                  ? "bg-blue-50 text-blue-700"
+                                  : application.status === "Screening"
+                                  ? "bg-violet-50 text-violet-700"
+                                  : "bg-slate-100 text-slate-600"
+                              }
+                            `}
+                          >
+                            {application.status}
+                          </span>
+
+                        </button>
+
+                      )
+                    )}
+
+                  </div>
+
+                )}
 
               </div>
 
@@ -216,8 +388,9 @@ function Dashboard() {
 
                 <div className="mt-5 space-y-3">
 
-                  <button className="flex w-full items-center justify-between rounded-xl border border-slate-200 px-4 py-3 text-left transition hover:border-blue-200 hover:bg-blue-50/50">
-
+                  <button
+                    className="flex w-full items-center justify-between rounded-xl border border-slate-200 px-4 py-3 text-left transition hover:border-blue-200 hover:bg-blue-50/50"
+                  >
                     <div>
 
                       <p className="text-sm font-semibold text-slate-800">
@@ -237,8 +410,10 @@ function Dashboard() {
                   </button>
 
 
-                  <button className="flex w-full items-center justify-between rounded-xl border border-slate-200 px-4 py-3 text-left transition hover:border-blue-200 hover:bg-blue-50/50">
-
+                  <button
+                    onClick={() => navigate("/applications")}
+                    className="flex w-full items-center justify-between rounded-xl border border-slate-200 px-4 py-3 text-left transition hover:border-blue-200 hover:bg-blue-50/50"
+                  >
                     <div>
 
                       <p className="text-sm font-semibold text-slate-800">
@@ -258,10 +433,11 @@ function Dashboard() {
                   </button>
 
 
-                  <button className="flex w-full items-center justify-between rounded-xl border border-slate-200 px-4 py-3 text-left transition hover:border-blue-200 hover:bg-blue-50/50">
-
+                  <button
+                    onClick={() => navigate("/profile")}
+                    className="flex w-full items-center justify-between rounded-xl border border-slate-200 px-4 py-3 text-left transition hover:border-blue-200 hover:bg-blue-50/50"
+                  >
                     <div>
-
                       <p className="text-sm font-semibold text-slate-800">
                         Update Profile
                       </p>
@@ -269,13 +445,11 @@ function Dashboard() {
                       <p className="mt-1 text-xs text-slate-500">
                         Manage career information
                       </p>
-
                     </div>
 
                     <span className="text-slate-400">
                       →
                     </span>
-
                   </button>
 
                 </div>
