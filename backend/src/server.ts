@@ -7,6 +7,7 @@ import authRoutes from "./routes/authRoutes";
 import applicationRoutes from "./routes/applicationRoutes";
 import dashboardRoutes from "./routes/dashboardRoutes";
 import profileRoutes from "./routes/profileRoutes";
+import resumeRoutes from "./routes/resumeRoutes";
 
 import db from "./config/db";
 
@@ -54,6 +55,11 @@ app.use(
 app.use(
   "/api/profile",
   profileRoutes
+);
+
+app.use(
+  "/api/resumes",
+  resumeRoutes
 );
 
 // ===============================

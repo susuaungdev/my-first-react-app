@@ -1,4 +1,7 @@
-import { useNavigate } from "react-router-dom";
+import {
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 
 type SidebarProps = {
   isOpen: boolean;
@@ -19,14 +22,44 @@ function Sidebar({
   onLogout,
 }: SidebarProps) {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const isActive = (path: string) => {
+    return location.pathname === path;
+  };
+
+  const navClass = (path: string) => {
+    return `
+      group flex w-full items-center gap-3 rounded-xl px-4 py-3
+      text-left text-sm transition
+      ${
+        isActive(path)
+          ? "bg-blue-50 font-semibold text-blue-700"
+          : "font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+      }
+    `;
+  };
+
+  const iconClass = (path: string) => {
+    return `
+      flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition
+      ${
+        isActive(path)
+          ? "bg-blue-100 text-blue-700"
+          : "bg-slate-50 text-slate-500 group-hover:bg-slate-100 group-hover:text-slate-800"
+      }
+    `;
+  };
 
   return (
     <>
       {/* MOBILE OVERLAY */}
       {isOpen && (
-        <div
+        <button
+          type="button"
           onClick={onClose}
-          className="fixed inset-0 z-40 bg-slate-900/40 lg:hidden"
+          className="fixed inset-0 z-40 bg-slate-900/30 backdrop-blur-[1px] lg:hidden"
+          aria-label="Close sidebar"
         />
       )}
 
@@ -48,7 +81,7 @@ function Sidebar({
 
           <button
             onClick={onClose}
-            className="text-xl text-slate-500 lg:hidden"
+            className="flex h-9 w-9 items-center justify-center rounded-lg text-xl text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 lg:hidden"
             aria-label="Close menu"
           >
             ×
@@ -57,57 +90,166 @@ function Sidebar({
 
         {/* NAVIGATION */}
         <nav className="flex-1 space-y-1 px-3 py-6">
+
+          {/* DASHBOARD */}
           <button
             onClick={() => {
               navigate("/dashboard");
               onClose();
             }}
-            className="flex w-full items-center gap-3 rounded-xl bg-blue-50 px-4 py-3 text-left text-sm font-semibold text-blue-700"
+            className={navClass("/dashboard")}
           >
-            <span>▦</span>
+            <span className={iconClass("/dashboard")}>
+              <svg
+                viewBox="0 0 24 24"
+                className="h-5 w-5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <rect x="3" y="3" width="7" height="7" rx="1.5" />
+                <rect x="14" y="3" width="7" height="7" rx="1.5" />
+                <rect x="3" y="14" width="7" height="7" rx="1.5" />
+                <rect x="14" y="14" width="7" height="7" rx="1.5" />
+              </svg>
+            </span>
+
             Dashboard
           </button>
 
+          {/* RESUMES */}
           <button
-            className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-medium text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
+            onClick={() => {
+              navigate("/resumes");
+              onClose();
+            }}
+            className={navClass("/resumes")}
           >
-            <span>◫</span>
+            <span className={iconClass("/resumes")}>
+              <svg
+                viewBox="0 0 24 24"
+                className="h-5 w-5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M6 2h8l4 4v16H6z" />
+                <path d="M14 2v5h5" />
+                <path d="M9 12h6" />
+                <path d="M9 16h6" />
+              </svg>
+            </span>
+
             Resumes
           </button>
 
+          {/* JOB APPLICATIONS */}
           <button
             onClick={() => {
               navigate("/applications");
               onClose();
             }}
-            className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-medium text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
+            className={navClass("/applications")}
           >
-            <span>▣</span>
+            <span className={iconClass("/applications")}>
+              <svg
+                viewBox="0 0 24 24"
+                className="h-5 w-5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <rect x="3" y="6" width="18" height="14" rx="2" />
+                <path d="M8 6V4h8v2" />
+                <path d="M3 11h18" />
+              </svg>
+            </span>
+
             Job Applications
           </button>
 
+          {/* SAVED JOBS */}
           <button
-            className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-medium text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
+            className="
+              group flex w-full items-center gap-3 rounded-xl px-4 py-3
+              text-left text-sm font-medium text-slate-600 transition
+              hover:bg-slate-50 hover:text-slate-900
+            "
           >
-            <span>☆</span>
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-50 text-slate-500 transition group-hover:bg-slate-100 group-hover:text-slate-800">
+              <svg
+                viewBox="0 0 24 24"
+                className="h-5 w-5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1Z" />
+              </svg>
+            </span>
+
             Saved Jobs
           </button>
 
+          {/* ANALYTICS */}
           <button
-            className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-medium text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
+            className="
+              group flex w-full items-center gap-3 rounded-xl px-4 py-3
+              text-left text-sm font-medium text-slate-600 transition
+              hover:bg-slate-50 hover:text-slate-900
+            "
           >
-            <span>↗</span>
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-50 text-slate-500 transition group-hover:bg-slate-100 group-hover:text-slate-800">
+              <svg
+                viewBox="0 0 24 24"
+                className="h-5 w-5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M4 20V10" />
+                <path d="M10 20V4" />
+                <path d="M16 20v-7" />
+                <path d="M22 20H2" />
+              </svg>
+            </span>
+
             Analytics
           </button>
 
+          {/* PROFILE */}
           <button
             onClick={() => {
               navigate("/profile");
               onClose();
             }}
-            className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-medium text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
+            className={navClass("/profile")}
           >
-            <span>⚙</span>
+            <span className={iconClass("/profile")}>
+              <svg
+                viewBox="0 0 24 24"
+                className="h-5 w-5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="12" cy="8" r="4" />
+                <path d="M4 21a8 8 0 0 1 16 0" />
+              </svg>
+            </span>
+
             Profile
           </button>
         </nav>
