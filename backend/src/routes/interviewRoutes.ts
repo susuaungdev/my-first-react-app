@@ -1,76 +1,76 @@
 import { Router } from "express";
 
 import {
-  createApplication,
-  getApplications,
-  getApplicationById,
-  getApplicationStatusHistory,
-  updateApplication,
-  deleteApplication,
-} from "../controllers/applicationController";
+  createInterview,
+  getInterviews,
+  getInterviewById,
+  getApplicationInterviews,
+  updateInterview,
+  deleteInterview,
+} from "../controllers/interviewController";
 
 import { authMiddleware } from "../middleware/authMiddleware";
 
 const router = Router();
 
 /* =========================================================
-   CREATE APPLICATION
+   CREATE INTERVIEW
 ========================================================= */
 
 router.post(
   "/",
   authMiddleware,
-  createApplication
+  createInterview
 );
 
 /* =========================================================
-   GET ALL APPLICATIONS
+   GET ALL INTERVIEWS
 ========================================================= */
 
 router.get(
   "/",
   authMiddleware,
-  getApplications
+  getInterviews
 );
 
 /* =========================================================
-   GET APPLICATION STATUS HISTORY
+   GET INTERVIEWS FOR ONE APPLICATION
 ========================================================= */
 
 router.get(
-  "/:id/status-history",
+  "/application/:id",
   authMiddleware,
-  getApplicationStatusHistory
+  getApplicationInterviews
 );
 
 /* =========================================================
-   GET ONE APPLICATION
+   GET ONE INTERVIEW
 ========================================================= */
 
 router.get(
   "/:id",
   authMiddleware,
-  getApplicationById
+  getInterviewById
 );
 
 /* =========================================================
-   UPDATE APPLICATION
+   UPDATE INTERVIEW
 ========================================================= */
 
 router.put(
   "/:id",
   authMiddleware,
-  updateApplication
+  updateInterview
 );
 
 /* =========================================================
-   DELETE APPLICATION
+   DELETE INTERVIEW
 ========================================================= */
 
 router.delete(
   "/:id",
   authMiddleware,
-  deleteApplication
+  deleteInterview
 );
 
 export default router;

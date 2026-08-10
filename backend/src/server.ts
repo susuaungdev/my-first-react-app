@@ -8,7 +8,7 @@ import applicationRoutes from "./routes/applicationRoutes";
 import dashboardRoutes from "./routes/dashboardRoutes";
 import profileRoutes from "./routes/profileRoutes";
 import resumeRoutes from "./routes/resumeRoutes";
-
+import interviewRoutes from "./routes/interviewRoutes";
 import db from "./config/db";
 
 dotenv.config();
@@ -60,6 +60,11 @@ app.use(
 app.use(
   "/api/resumes",
   resumeRoutes
+);
+
+app.use(
+  "/api/interviews",
+  interviewRoutes
 );
 
 // ===============================

@@ -1,9 +1,17 @@
-import { useState } from "react";
+import {
+  useEffect,
+  useState,
+} from "react";
 
 import {
   createApplication,
   type CreateApplicationData,
 } from "../../services/applicationService";
+
+import {
+  getResumes,
+  type Resume,
+} from "../../services/resumeService";
 
 type ApplicationFormProps = {
   onClose: () => void;
@@ -14,52 +22,208 @@ function ApplicationForm({
   onClose,
   onCreated,
 }: ApplicationFormProps) {
-  const [company, setCompany] = useState("");
-  const [jobTitle, setJobTitle] = useState("");
-  const [location, setLocation] = useState("");
-  const [jobUrl, setJobUrl] = useState("");
-  const [salary, setSalary] = useState("");
-  const [employmentType, setEmploymentType] = useState("Full-time");
-  const [description, setDescription] = useState("");
-  const [dateApplied, setDateApplied] = useState("");
-  const [deadline, setDeadline] = useState("");
-  const [status, setStatus] = useState("Saved");
-  const [notes, setNotes] = useState("");
-  const [interviewDate, setInterviewDate] = useState("");
-  const [contactPerson, setContactPerson] = useState("");
+  /* =========================================================
+     APPLICATION STATE
+  ========================================================= */
 
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [company, setCompany] =
+    useState("");
+
+  const [jobTitle, setJobTitle] =
+    useState("");
+
+  const [location, setLocation] =
+    useState("");
+
+  const [jobUrl, setJobUrl] =
+    useState("");
+
+  const [salary, setSalary] =
+    useState("");
+
+  const [
+    employmentType,
+    setEmploymentType,
+  ] = useState("Full-time");
+
+  const [
+    description,
+    setDescription,
+  ] = useState("");
+
+  const [
+    dateApplied,
+    setDateApplied,
+  ] = useState("");
+
+  const [deadline, setDeadline] =
+    useState("");
+
+  const [status, setStatus] =
+    useState("Saved");
+
+  const [notes, setNotes] =
+    useState("");
+
+  const [
+    interviewDate,
+    setInterviewDate,
+  ] = useState("");
+
+  const [
+    contactPerson,
+    setContactPerson,
+  ] = useState("");
+
+  /* =========================================================
+     RESUME STATE
+  ========================================================= */
+
+  const [resumes, setResumes] =
+    useState<Resume[]>([]);
+
+  const [
+    selectedResumeId,
+    setSelectedResumeId,
+  ] = useState("");
+
+  const [
+    loadingResumes,
+    setLoadingResumes,
+  ] = useState(true);
+
+  const [
+    resumeError,
+    setResumeError,
+  ] = useState("");
+
+  /* =========================================================
+     FORM STATE
+  ========================================================= */
+
+  const [error, setError] =
+    useState("");
+
+  const [loading, setLoading] =
+    useState(false);
+
+  /* =========================================================
+     LOAD USER RESUMES
+  ========================================================= */
+
+  useEffect(() => {
+    const loadResumes = async () => {
+      try {
+        setLoadingResumes(true);
+        setResumeError("");
+
+        const data =
+          await getResumes();
+
+        setResumes(
+          data.resumes || []
+        );
+      } catch (error) {
+        console.error(
+          "Failed to load resumes:",
+          error
+        );
+
+        if (
+          error instanceof Error
+        ) {
+          setResumeError(
+            error.message
+          );
+        } else {
+          setResumeError(
+            "Failed to load resumes."
+          );
+        }
+      } finally {
+        setLoadingResumes(false);
+      }
+    };
+
+    loadResumes();
+  }, []);
+
+  /* =========================================================
+     SUBMIT APPLICATION
+  ========================================================= */
 
   const handleSubmit = async (
     e: React.FormEvent
   ) => {
     e.preventDefault();
 
-    if (!company || !jobTitle) {
+    /* =====================================================
+       BASIC VALIDATION
+    ===================================================== */
+
+    if (
+      !company.trim() ||
+      !jobTitle.trim()
+    ) {
       setError(
         "Company and job title are required."
       );
+
       return;
     }
 
     setError("");
 
-    const applicationData: CreateApplicationData = {
-      company,
-      job_title: jobTitle,
-      location,
-      job_url: jobUrl,
-      salary,
-      employment_type: employmentType,
-      description,
-      date_applied: dateApplied,
-      deadline,
-      status,
-      notes,
-      interview_date: interviewDate,
-      contact_person: contactPerson,
-    };
+    /* =====================================================
+       APPLICATION PAYLOAD
+    ===================================================== */
+
+    const applicationData:
+      CreateApplicationData = {
+        company:
+          company.trim(),
+
+        job_title:
+          jobTitle.trim(),
+
+        location:
+          location.trim(),
+
+        job_url:
+          jobUrl.trim(),
+
+        salary:
+          salary.trim(),
+
+        employment_type:
+          employmentType,
+
+        description:
+          description.trim(),
+
+        date_applied:
+          dateApplied,
+
+        deadline,
+
+        status,
+
+        notes:
+          notes.trim(),
+
+        interview_date:
+          interviewDate,
+
+        contact_person:
+          contactPerson.trim(),
+
+        resume_id:
+          selectedResumeId
+            ? Number(
+                selectedResumeId
+              )
+            : null,
+      };
 
     try {
       setLoading(true);
@@ -69,33 +233,40 @@ function ApplicationForm({
       );
 
       onCreated();
+
       onClose();
-
     } catch (error) {
-
       console.error(error);
 
-      if (error instanceof Error) {
-        setError(error.message);
+      if (
+        error instanceof Error
+      ) {
+        setError(
+          error.message
+        );
       } else {
         setError(
           "Failed to create application."
         );
       }
-
     } finally {
-
       setLoading(false);
-
     }
   };
+
+  /* =========================================================
+     PAGE
+  ========================================================= */
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 px-4 py-6">
 
       <div className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white shadow-2xl">
 
-        {/* Header */}
+        {/* =====================================================
+            HEADER
+        ===================================================== */}
+
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white px-6 py-5">
 
           <div>
@@ -119,22 +290,29 @@ function ApplicationForm({
 
         </div>
 
+        {/* =====================================================
+            FORM
+        ===================================================== */}
 
-        {/* Form */}
         <form
           onSubmit={handleSubmit}
           className="space-y-6 p-6"
         >
 
-          {/* Error */}
+          {/* ===================================================
+              ERROR
+          =================================================== */}
+
           {error && (
             <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
               {error}
             </div>
           )}
 
+          {/* ===================================================
+              BASIC INFORMATION
+          =================================================== */}
 
-          {/* Basic Information */}
           <section>
 
             <h3 className="text-sm font-bold text-slate-900">
@@ -142,6 +320,8 @@ function ApplicationForm({
             </h3>
 
             <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+
+              {/* COMPANY */}
 
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-slate-700">
@@ -152,13 +332,16 @@ function ApplicationForm({
                   type="text"
                   value={company}
                   onChange={(e) =>
-                    setCompany(e.target.value)
+                    setCompany(
+                      e.target.value
+                    )
                   }
                   placeholder="Google"
                   className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                 />
               </div>
 
+              {/* JOB TITLE */}
 
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-slate-700">
@@ -169,13 +352,16 @@ function ApplicationForm({
                   type="text"
                   value={jobTitle}
                   onChange={(e) =>
-                    setJobTitle(e.target.value)
+                    setJobTitle(
+                      e.target.value
+                    )
                   }
                   placeholder="Frontend Developer"
                   className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                 />
               </div>
 
+              {/* LOCATION */}
 
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-slate-700">
@@ -186,13 +372,16 @@ function ApplicationForm({
                   type="text"
                   value={location}
                   onChange={(e) =>
-                    setLocation(e.target.value)
+                    setLocation(
+                      e.target.value
+                    )
                   }
                   placeholder="Remote"
                   className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                 />
               </div>
 
+              {/* SALARY */}
 
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-slate-700">
@@ -203,7 +392,9 @@ function ApplicationForm({
                   type="text"
                   value={salary}
                   onChange={(e) =>
-                    setSalary(e.target.value)
+                    setSalary(
+                      e.target.value
+                    )
                   }
                   placeholder="$80,000"
                   className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
@@ -214,8 +405,10 @@ function ApplicationForm({
 
           </section>
 
+          {/* ===================================================
+              JOB DETAILS
+          =================================================== */}
 
-          {/* Job Details */}
           <section>
 
             <h3 className="text-sm font-bold text-slate-900">
@@ -224,13 +417,17 @@ function ApplicationForm({
 
             <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
 
+              {/* EMPLOYMENT TYPE */}
+
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-slate-700">
                   Employment type
                 </label>
 
                 <select
-                  value={employmentType}
+                  value={
+                    employmentType
+                  }
                   onChange={(e) =>
                     setEmploymentType(
                       e.target.value
@@ -264,6 +461,7 @@ function ApplicationForm({
                 </select>
               </div>
 
+              {/* STATUS */}
 
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-slate-700">
@@ -273,7 +471,9 @@ function ApplicationForm({
                 <select
                   value={status}
                   onChange={(e) =>
-                    setStatus(e.target.value)
+                    setStatus(
+                      e.target.value
+                    )
                   }
                   className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                 >
@@ -315,8 +515,87 @@ function ApplicationForm({
                 </select>
               </div>
 
+              {/* =================================================
+                  RESUME USED
+              ================================================= */}
 
               <div className="sm:col-span-2">
+
+                <label className="mb-1.5 block text-sm font-medium text-slate-700">
+                  Resume used
+                </label>
+
+                <select
+                  value={
+                    selectedResumeId
+                  }
+                  onChange={(e) =>
+                    setSelectedResumeId(
+                      e.target.value
+                    )
+                  }
+                  disabled={
+                    loadingResumes
+                  }
+                  className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400"
+                >
+
+                  <option value="">
+                    {loadingResumes
+                      ? "Loading resumes..."
+                      : "No resume selected"}
+                  </option>
+
+                  {!loadingResumes &&
+                    resumes.map(
+                      (resume) => (
+                        <option
+                          key={
+                            resume.id
+                          }
+                          value={
+                            resume.id
+                          }
+                        >
+                          {
+                            resume.title
+                          }
+                        </option>
+                      )
+                    )}
+
+                </select>
+
+                {resumeError && (
+                  <p className="mt-2 text-xs text-red-600">
+                    {resumeError}
+                  </p>
+                )}
+
+                {!loadingResumes &&
+                  !resumeError &&
+                  resumes.length ===
+                    0 && (
+                    <p className="mt-2 text-xs text-slate-500">
+                      You do not have any resumes yet. You can create the application without one and attach a resume later.
+                    </p>
+                  )}
+
+                {!loadingResumes &&
+                  !resumeError &&
+                  resumes.length >
+                    0 && (
+                    <p className="mt-2 text-xs text-slate-500">
+                      Choose the resume you plan to use for this application.
+                    </p>
+                  )}
+
+              </div>
+
+              {/* JOB URL */}
+
+              <div className="sm:col-span-2">
+
                 <label className="mb-1.5 block text-sm font-medium text-slate-700">
                   Job URL
                 </label>
@@ -325,13 +604,17 @@ function ApplicationForm({
                   type="url"
                   value={jobUrl}
                   onChange={(e) =>
-                    setJobUrl(e.target.value)
+                    setJobUrl(
+                      e.target.value
+                    )
                   }
                   placeholder="https://company.com/jobs/..."
                   className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                 />
+
               </div>
 
+              {/* DATE APPLIED */}
 
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-slate-700">
@@ -340,14 +623,19 @@ function ApplicationForm({
 
                 <input
                   type="date"
-                  value={dateApplied}
+                  value={
+                    dateApplied
+                  }
                   onChange={(e) =>
-                    setDateApplied(e.target.value)
+                    setDateApplied(
+                      e.target.value
+                    )
                   }
                   className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                 />
               </div>
 
+              {/* DEADLINE */}
 
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-slate-700">
@@ -358,7 +646,9 @@ function ApplicationForm({
                   type="date"
                   value={deadline}
                   onChange={(e) =>
-                    setDeadline(e.target.value)
+                    setDeadline(
+                      e.target.value
+                    )
                   }
                   className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                 />
@@ -368,8 +658,10 @@ function ApplicationForm({
 
           </section>
 
+          {/* ===================================================
+              ADDITIONAL DETAILS
+          =================================================== */}
 
-          {/* Additional Details */}
           <section>
 
             <h3 className="text-sm font-bold text-slate-900">
@@ -378,6 +670,8 @@ function ApplicationForm({
 
             <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
 
+              {/* INTERVIEW DATE */}
+
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-slate-700">
                   Interview date
@@ -385,7 +679,9 @@ function ApplicationForm({
 
                 <input
                   type="datetime-local"
-                  value={interviewDate}
+                  value={
+                    interviewDate
+                  }
                   onChange={(e) =>
                     setInterviewDate(
                       e.target.value
@@ -395,6 +691,7 @@ function ApplicationForm({
                 />
               </div>
 
+              {/* CONTACT PERSON */}
 
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-slate-700">
@@ -403,7 +700,9 @@ function ApplicationForm({
 
                 <input
                   type="text"
-                  value={contactPerson}
+                  value={
+                    contactPerson
+                  }
                   onChange={(e) =>
                     setContactPerson(
                       e.target.value
@@ -414,6 +713,7 @@ function ApplicationForm({
                 />
               </div>
 
+              {/* DESCRIPTION */}
 
               <div className="sm:col-span-2">
                 <label className="mb-1.5 block text-sm font-medium text-slate-700">
@@ -421,7 +721,9 @@ function ApplicationForm({
                 </label>
 
                 <textarea
-                  value={description}
+                  value={
+                    description
+                  }
                   onChange={(e) =>
                     setDescription(
                       e.target.value
@@ -433,6 +735,7 @@ function ApplicationForm({
                 />
               </div>
 
+              {/* NOTES */}
 
               <div className="sm:col-span-2">
                 <label className="mb-1.5 block text-sm font-medium text-slate-700">
@@ -442,7 +745,9 @@ function ApplicationForm({
                 <textarea
                   value={notes}
                   onChange={(e) =>
-                    setNotes(e.target.value)
+                    setNotes(
+                      e.target.value
+                    )
                   }
                   rows={3}
                   placeholder="Personal notes about this application..."
@@ -454,8 +759,10 @@ function ApplicationForm({
 
           </section>
 
+          {/* ===================================================
+              BUTTONS
+          =================================================== */}
 
-          {/* Buttons */}
           <div className="flex flex-col-reverse gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:justify-end">
 
             <button
