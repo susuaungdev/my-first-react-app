@@ -9,7 +9,11 @@ import dashboardRoutes from "./routes/dashboardRoutes";
 import profileRoutes from "./routes/profileRoutes";
 import resumeRoutes from "./routes/resumeRoutes";
 import interviewRoutes from "./routes/interviewRoutes";
+import savedJobRoutes from "./routes/savedJobRoutes";
+import analyticsRoutes from "./routes/analyticsRoutes";
+import notificationRoutes from "./routes/notificationRoutes";
 import db from "./config/db";
+
 
 dotenv.config();
 
@@ -65,6 +69,21 @@ app.use(
 app.use(
   "/api/interviews",
   interviewRoutes
+);
+
+app.use(
+  "/api/saved-jobs",
+  savedJobRoutes
+);
+
+app.use(
+  "/api/analytics",
+  analyticsRoutes
+);
+
+app.use(
+  "/api/notifications",
+  notificationRoutes
 );
 
 // ===============================

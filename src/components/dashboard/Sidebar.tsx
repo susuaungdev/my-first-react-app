@@ -82,7 +82,9 @@ function Sidebar({
   const handleNavigate = (
     path: string
   ) => {
-    navigate(path);
+    navigate(
+      path
+    );
 
     onClose();
   };
@@ -393,14 +395,24 @@ function Sidebar({
 
           <button
             type="button"
-            className="
-              group flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5
-              text-left text-sm font-medium text-slate-600 transition
-              hover:bg-slate-50 hover:text-slate-900
-            "
+            onClick={() =>
+              handleNavigate(
+                "/saved-jobs"
+              )
+            }
+            className={
+              navClass(
+                "/saved-jobs"
+              )
+            }
           >
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-50 text-slate-500 transition group-hover:bg-slate-100 group-hover:text-slate-800">
-
+            <span
+              className={
+                iconClass(
+                  "/saved-jobs"
+                )
+              }
+            >
               <svg
                 viewBox="0 0 24 24"
                 className="h-[18px] w-[18px]"
@@ -412,7 +424,6 @@ function Sidebar({
               >
                 <path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1Z" />
               </svg>
-
             </span>
 
             Saved Jobs
@@ -424,14 +435,24 @@ function Sidebar({
 
           <button
             type="button"
-            className="
-              group flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5
-              text-left text-sm font-medium text-slate-600 transition
-              hover:bg-slate-50 hover:text-slate-900
-            "
+            onClick={() =>
+              handleNavigate(
+                "/analytics"
+              )
+            }
+            className={
+              navClass(
+                "/analytics"
+              )
+            }
           >
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-50 text-slate-500 transition group-hover:bg-slate-100 group-hover:text-slate-800">
-
+            <span
+              className={
+                iconClass(
+                  "/analytics"
+                )
+              }
+            >
               <svg
                 viewBox="0 0 24 24"
                 className="h-[18px] w-[18px]"
@@ -449,7 +470,6 @@ function Sidebar({
 
                 <path d="M22 20H2" />
               </svg>
-
             </span>
 
             Analytics
@@ -521,7 +541,7 @@ function Sidebar({
                 : "U"}
             </div>
 
-            {/* USER DETAILS */}
+            {/* USER INFO */}
 
             <div className="min-w-0">
 
@@ -539,9 +559,7 @@ function Sidebar({
 
           </div>
 
-          {/* =================================================
-              LOGOUT
-          ================================================= */}
+          {/* LOGOUT */}
 
           <button
             type="button"

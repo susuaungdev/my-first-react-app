@@ -9,6 +9,7 @@ import {
 } from "react-router-dom";
 
 import Sidebar from "../components/dashboard/Sidebar";
+import DashboardHeader from "../components/dashboard/DashboardHeader";
 
 import {
   getProfile,
@@ -772,48 +773,13 @@ function Profile() {
 
       <div className="min-w-0 lg:ml-64">
         {/* ===================================================
-            PROFILE PAGE HEADER
+            DASHBOARD HEADER
         =================================================== */}
 
-        <header className="border-b border-slate-200 bg-white">
-          <div className="mx-auto flex min-h-16 max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
-            <div className="min-w-0">
-              <h1 className="text-lg font-bold text-slate-900">
-                Profile
-              </h1>
-            </div>
+        <DashboardHeader
+          user={user}
+        />
 
-            {!editing ? (
-              <button
-                onClick={() => {
-                  setEditing(true);
-                  setSuccess("");
-                }}
-                className="flex shrink-0 items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 sm:px-4"
-              >
-                <EditIcon />
-
-                <span className="hidden sm:inline">
-                  Edit profile
-                </span>
-
-                <span className="sm:hidden">
-                  Edit
-                </span>
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={
-                  handleCancel
-                }
-                className="text-sm font-semibold text-slate-600 hover:text-slate-900"
-              >
-                Cancel
-              </button>
-            )}
-          </div>
-        </header>
 
         {/* ===================================================
             SMALL COVER

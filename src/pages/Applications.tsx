@@ -22,6 +22,7 @@ import {
 } from "@dnd-kit/core";
 
 import Sidebar from "../components/dashboard/Sidebar";
+import DashboardHeader from "../components/dashboard/DashboardHeader";
 
 import ApplicationForm from "../components/applications/ApplicationForm";
 import DeleteApplicationModal from "../components/applications/DeleteApplicationModal";
@@ -867,6 +868,14 @@ function Applications() {
       ===================================================== */}
 
       <div className="min-w-0 lg:ml-64">
+
+        {/* =====================================================
+            DESKTOP HEADER
+        ===================================================== */}
+
+        <DashboardHeader
+          user={user}
+        />
 
         <main className="mx-auto max-w-[1600px] px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
 

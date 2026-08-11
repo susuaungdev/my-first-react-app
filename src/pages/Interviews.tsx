@@ -9,6 +9,7 @@ import {
 } from "react-router-dom";
 
 import Sidebar from "../components/dashboard/Sidebar";
+import DashboardHeader from "../components/dashboard/DashboardHeader";
 
 import {
   deleteInterview,
@@ -846,6 +847,14 @@ function Interviews() {
         ===================================================== */}
 
         <div className="min-w-0 lg:ml-64">
+
+          {/* =====================================================
+              DESKTOP HEADER
+          ===================================================== */}
+
+          <DashboardHeader
+            user={user}
+          />
 
           <main className="mx-auto w-full max-w-[1600px] px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
 

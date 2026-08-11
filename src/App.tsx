@@ -17,6 +17,8 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import ResumeDetails from "./pages/ResumeDetails";
 import EditResume from "./pages/EditResume";
 import Interviews from "./pages/Interviews";
+import SavedJobs from "./pages/SavedJobs";
+import Analytics from "./pages/Analytics";
 
 function App() {
   return (
@@ -110,6 +112,16 @@ function App() {
       <Route
         path="/interviews"
         element={<Interviews />}
+      />
+
+      <Route
+        path="/saved-jobs"
+        element={<SavedJobs />}
+      />
+
+      <Route
+        path="/analytics"
+        element={<Analytics />}
       />
 
       </Routes>
