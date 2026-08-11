@@ -16,6 +16,7 @@ import CreateResume from "./pages/CreateResume";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ResumeDetails from "./pages/ResumeDetails";
 import EditResume from "./pages/EditResume";
+import Interviews from "./pages/Interviews";
 
 function App() {
   return (
@@ -104,6 +105,11 @@ function App() {
             <EditResume />
           </ProtectedRoute>
         }
+      />
+
+      <Route
+        path="/interviews"
+        element={<Interviews />}
       />
 
       </Routes>

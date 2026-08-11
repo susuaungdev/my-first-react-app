@@ -21,10 +21,18 @@ import {
 
 import InterviewForm from "../interviews/InterviewForm";
 
+/* =========================================================
+   PROPS
+========================================================= */
+
 type ApplicationDetailsModalProps = {
   application: Application;
   onClose: () => void;
 };
+
+/* =========================================================
+   APPLICATION DETAILS MODAL
+========================================================= */
 
 function ApplicationDetailsModal({
   application,
@@ -81,11 +89,31 @@ function ApplicationDetailsModal({
   ] =
     useState("");
 
+  /* =========================================================
+     CREATE INTERVIEW STATE
+  ========================================================= */
+
   const [
     showInterviewForm,
     setShowInterviewForm,
   ] =
     useState(false);
+
+  /* =========================================================
+     EDIT INTERVIEW STATE
+  ========================================================= */
+
+  const [
+    interviewToEdit,
+    setInterviewToEdit,
+  ] =
+    useState<
+      Interview | null
+    >(null);
+
+  /* =========================================================
+     DELETE INTERVIEW STATE
+  ========================================================= */
 
   const [
     deletingInterviewId,
@@ -200,6 +228,86 @@ function ApplicationDetailsModal({
   }, [application.id]);
 
   /* =========================================================
+     OPEN CREATE INTERVIEW
+  ========================================================= */
+
+  const handleOpenCreateInterview =
+    () => {
+      setInterviewToEdit(
+        null
+      );
+
+      setShowInterviewForm(
+        true
+      );
+    };
+
+  /* =========================================================
+     CLOSE CREATE INTERVIEW
+  ========================================================= */
+
+  const handleCloseCreateInterview =
+    () => {
+      setShowInterviewForm(
+        false
+      );
+    };
+
+  /* =========================================================
+     OPEN EDIT INTERVIEW
+  ========================================================= */
+
+  const handleEditInterview =
+    (
+      interview: Interview
+    ) => {
+      setShowInterviewForm(
+        false
+      );
+
+      setInterviewToEdit(
+        interview
+      );
+    };
+
+  /* =========================================================
+     CLOSE EDIT INTERVIEW
+  ========================================================= */
+
+  const handleCloseEditInterview =
+    () => {
+      setInterviewToEdit(
+        null
+      );
+    };
+
+  /* =========================================================
+     INTERVIEW UPDATED
+  ========================================================= */
+
+  const handleInterviewUpdated =
+    async () => {
+      await loadInterviews();
+
+      setInterviewToEdit(
+        null
+      );
+    };
+
+  /* =========================================================
+     INTERVIEW CREATED
+  ========================================================= */
+
+  const handleInterviewCreated =
+    async () => {
+      await loadInterviews();
+
+      setShowInterviewForm(
+        false
+      );
+    };
+
+  /* =========================================================
      DELETE INTERVIEW
   ========================================================= */
 
@@ -210,7 +318,7 @@ function ApplicationDetailsModal({
     ) => {
       const confirmed =
         window.confirm(
-          `Delete "${interview.interview_type}"?`
+          `Are you sure you want to delete "${interview.interview_type}"?`
         );
 
       if (!confirmed) {
@@ -306,19 +414,20 @@ function ApplicationDetailsModal({
      VIEW RESUME
   ========================================================= */
 
-  const handleViewResume = () => {
-    if (
-      !application.resume_id
-    ) {
-      return;
-    }
+  const handleViewResume =
+    () => {
+      if (
+        !application.resume_id
+      ) {
+        return;
+      }
 
-    onClose();
+      onClose();
 
-    navigate(
-      `/resumes/${application.resume_id}`
-    );
-  };
+      navigate(
+        `/resumes/${application.resume_id}`
+      );
+    };
 
   /* =========================================================
      APPLICATION STATUS COLOR
@@ -681,10 +790,8 @@ function ApplicationDetailsModal({
 
                 <button
                   type="button"
-                  onClick={() =>
-                    setShowInterviewForm(
-                      true
-                    )
+                  onClick={
+                    handleOpenCreateInterview
                   }
                   className="shrink-0 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
                 >
@@ -693,7 +800,9 @@ function ApplicationDetailsModal({
 
               </div>
 
-              {/* INTERVIEW ERROR */}
+              {/* =================================================
+                  INTERVIEW ERROR
+              ================================================= */}
 
               {interviewError && (
                 <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -703,7 +812,9 @@ function ApplicationDetailsModal({
                 </div>
               )}
 
-              {/* LOADING */}
+              {/* =================================================
+                  LOADING INTERVIEWS
+              ================================================= */}
 
               {loadingInterviews && (
                 <div className="mt-4 flex min-h-28 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50">
@@ -721,7 +832,9 @@ function ApplicationDetailsModal({
                 </div>
               )}
 
-              {/* EMPTY */}
+              {/* =================================================
+                  NO INTERVIEWS
+              ================================================= */}
 
               {!loadingInterviews &&
                 interviews.length ===
@@ -737,15 +850,14 @@ function ApplicationDetailsModal({
                     </p>
 
                     <p className="mt-1 text-xs leading-5 text-slate-500">
-                      Add recruiter screens, technical interviews, coding interviews, final rounds, and more.
+                      Add recruiter screens, technical interviews,
+                      coding interviews, final rounds, and more.
                     </p>
 
                     <button
                       type="button"
-                      onClick={() =>
-                        setShowInterviewForm(
-                          true
-                        )
+                      onClick={
+                        handleOpenCreateInterview
                       }
                       className="mt-4 text-sm font-semibold text-blue-600 hover:text-blue-700"
                     >
@@ -755,7 +867,9 @@ function ApplicationDetailsModal({
                   </div>
                 )}
 
-              {/* INTERVIEW LIST */}
+              {/* =================================================
+                  INTERVIEW LIST
+              ================================================= */}
 
               {!loadingInterviews &&
                 interviews.length >
@@ -774,9 +888,11 @@ function ApplicationDetailsModal({
                           className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
                         >
 
-                          {/* INTERVIEW HEADER */}
+                          {/* =========================================
+                              INTERVIEW HEADER
+                          ========================================= */}
 
-                          <div className="flex flex-col gap-3 border-b border-slate-100 bg-slate-50/70 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                          <div className="flex flex-col gap-4 border-b border-slate-100 bg-slate-50/70 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
 
                             <div className="min-w-0">
 
@@ -832,28 +948,54 @@ function ApplicationDetailsModal({
 
                             </div>
 
-                            <button
-                              type="button"
-                              disabled={
-                                deletingInterviewId ===
+                            {/* =======================================
+                                EDIT / DELETE BUTTONS
+                            ======================================= */}
+
+                            <div className="flex shrink-0 items-center gap-2">
+
+                              <button
+                                type="button"
+                                disabled={
+                                  deletingInterviewId ===
+                                  interview.id
+                                }
+                                onClick={() =>
+                                  handleEditInterview(
+                                    interview
+                                  )
+                                }
+                                className="rounded-lg border border-blue-200 bg-white px-3 py-2 text-xs font-semibold text-blue-600 transition hover:bg-blue-50 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                              >
+                                Edit
+                              </button>
+
+                              <button
+                                type="button"
+                                disabled={
+                                  deletingInterviewId ===
+                                  interview.id
+                                }
+                                onClick={() =>
+                                  handleDeleteInterview(
+                                    interview
+                                  )
+                                }
+                                className="rounded-lg border border-red-200 bg-white px-3 py-2 text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                              >
+                                {deletingInterviewId ===
                                 interview.id
-                              }
-                              onClick={() =>
-                                handleDeleteInterview(
-                                  interview
-                                )
-                              }
-                              className="shrink-0 rounded-lg border border-red-200 bg-white px-3 py-2 text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
-                            >
-                              {deletingInterviewId ===
-                              interview.id
-                                ? "Deleting..."
-                                : "Delete"}
-                            </button>
+                                  ? "Deleting..."
+                                  : "Delete"}
+                              </button>
+
+                            </div>
 
                           </div>
 
-                          {/* INTERVIEW DETAILS */}
+                          {/* =========================================
+                              INTERVIEW DETAILS
+                          ========================================= */}
 
                           <div className="space-y-5 p-5">
 
@@ -896,7 +1038,9 @@ function ApplicationDetailsModal({
 
                             </div>
 
-                            {/* MEETING URL */}
+                            {/* =======================================
+                                MEETING URL
+                            ======================================= */}
 
                             {interview.meeting_url && (
                               <div className="rounded-xl border border-blue-100 bg-blue-50 p-4">
@@ -911,7 +1055,7 @@ function ApplicationDetailsModal({
                                   }
                                   target="_blank"
                                   rel="noreferrer"
-                                  className="mt-2 inline-flex text-sm font-semibold text-blue-600 hover:text-blue-700 hover:underline"
+                                  className="mt-2 inline-flex break-all text-sm font-semibold text-blue-600 hover:text-blue-700 hover:underline"
                                 >
                                   Open meeting link →
                                 </a>
@@ -919,7 +1063,9 @@ function ApplicationDetailsModal({
                               </div>
                             )}
 
-                            {/* PREPARATION */}
+                            {/* =======================================
+                                PREPARATION NOTES
+                            ======================================= */}
 
                             {interview.preparation_notes && (
                               <div>
@@ -941,7 +1087,9 @@ function ApplicationDetailsModal({
                               </div>
                             )}
 
-                            {/* NOTES */}
+                            {/* =======================================
+                                INTERVIEW NOTES
+                            ======================================= */}
 
                             {interview.notes && (
                               <div>
@@ -1015,7 +1163,9 @@ function ApplicationDetailsModal({
 
               <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-5">
 
-                {/* LOADING */}
+                {/* =================================================
+                    TIMELINE LOADING
+                ================================================= */}
 
                 {loadingHistory && (
                   <div className="flex items-center gap-3 py-3">
@@ -1029,7 +1179,9 @@ function ApplicationDetailsModal({
                   </div>
                 )}
 
-                {/* ERROR */}
+                {/* =================================================
+                    TIMELINE ERROR
+                ================================================= */}
 
                 {!loadingHistory &&
                   historyError && (
@@ -1048,7 +1200,9 @@ function ApplicationDetailsModal({
                     </div>
                   )}
 
-                {/* EMPTY */}
+                {/* =================================================
+                    EMPTY TIMELINE
+                ================================================= */}
 
                 {!loadingHistory &&
                   !historyError &&
@@ -1067,7 +1221,9 @@ function ApplicationDetailsModal({
                     </div>
                   )}
 
-                {/* TIMELINE */}
+                {/* =================================================
+                    TIMELINE
+                ================================================= */}
 
                 {!loadingHistory &&
                   !historyError &&
@@ -1373,21 +1529,46 @@ function ApplicationDetailsModal({
       </div>
 
       {/* =====================================================
-          ADD INTERVIEW MODAL
+          CREATE INTERVIEW MODAL
       ===================================================== */}
 
-      {showInterviewForm && (
+      {showInterviewForm &&
+        !interviewToEdit && (
+          <InterviewForm
+            application={
+              application
+            }
+
+            onClose={
+              handleCloseCreateInterview
+            }
+
+            onCreated={
+              handleInterviewCreated
+            }
+          />
+        )}
+
+      {/* =====================================================
+          EDIT INTERVIEW MODAL
+      ===================================================== */}
+
+      {interviewToEdit && (
         <InterviewForm
           application={
             application
           }
-          onClose={() =>
-            setShowInterviewForm(
-              false
-            )
+
+          interview={
+            interviewToEdit
           }
-          onCreated={
-            loadInterviews
+
+          onClose={
+            handleCloseEditInterview
+          }
+
+          onUpdated={
+            handleInterviewUpdated
           }
         />
       )}
