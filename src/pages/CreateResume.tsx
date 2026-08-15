@@ -7,6 +7,8 @@ import {
   useNavigate,
 } from "react-router-dom";
 
+import toast from "react-hot-toast";
+
 import Sidebar from "../components/dashboard/Sidebar";
 
 import {
@@ -498,6 +500,10 @@ function CreateResume() {
         "Resume title is required."
       );
 
+      toast.error(
+        "Resume title is required."
+      );
+
       window.scrollTo({
         top: 0,
         behavior: "smooth",
@@ -566,6 +572,10 @@ function CreateResume() {
           selectedAccentColor,
       });
 
+      toast.success(
+        "Resume created successfully."
+      );
+
       navigate(
         "/resumes"
       );
@@ -578,8 +588,16 @@ function CreateResume() {
         setError(
           error.message
         );
+
+        toast.error(
+          error.message
+        );
       } else {
         setError(
+          "Failed to create resume."
+        );
+
+        toast.error(
           "Failed to create resume."
         );
       }
