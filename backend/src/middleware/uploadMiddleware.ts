@@ -1,88 +1,64 @@
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+import { randomUUID } from "crypto";
 
-const uploadDirectory = path.join(
-  __dirname,
-  "../../uploads"
-);
+export const uploadDirectory = path.resolve(__dirname, "../../uploads");
 
-if (!fs.existsSync(uploadDirectory)) {
-  fs.mkdirSync(
-    uploadDirectory,
-    {
-      recursive: true,
-    }
-  );
-}
+fs.mkdirSync(uploadDirectory, { recursive: true });
+
+const allowedFiles: Record<string, string> = {
+  "image/jpeg": ".jpg",
+  "image/png": ".png",
+  "image/webp": ".webp",
+};
 
 const storage = multer.diskStorage({
-  destination: (
-    req,
-    file,
-    callback
-  ) => {
-    callback(
-      null,
-      uploadDirectory
-    );
+  destination: (_req, _file, callback) => {
+    callback(null, uploadDirectory);
   },
+  filename: (_req, file, callback) => {
+    const extension = allowedFiles[file.mimetype];
 
-  filename: (
-    req,
-    file,
-    callback
-  ) => {
-    const uniqueName =
-      `${Date.now()}-${Math.round(
-        Math.random() * 1e9
-      )}`;
+    if (!extension) {
+      callback(new Error("Unsupported image type."), "");
+      return;
+    }
 
-    const extension =
-      path.extname(
-        file.originalname
-      );
-
-    callback(
-      null,
-      `${uniqueName}${extension}`
-    );
+    callback(null, `${randomUUID()}${extension}`);
   },
 });
 
 const fileFilter: multer.Options["fileFilter"] = (
-  req,
+  _req,
   file,
   callback
 ) => {
-  const allowedTypes = [
-    "image/jpeg",
-    "image/png",
-    "image/webp",
-  ];
+  const expectedExtension = allowedFiles[file.mimetype];
+  const originalExtension = path.extname(file.originalname).toLowerCase();
+  const validJpegExtension =
+    file.mimetype === "image/jpeg" &&
+    [".jpg", ".jpeg"].includes(originalExtension);
 
   if (
-    allowedTypes.includes(
-      file.mimetype
-    )
+    expectedExtension &&
+    (originalExtension === expectedExtension || validJpegExtension)
   ) {
     callback(null, true);
-  } else {
-    callback(
-      new Error(
-        "Only JPG, PNG, and WebP images are allowed"
-      )
-    );
+    return;
   }
+
+  callback(new Error("Only valid JPG, PNG, and WebP images are allowed."));
 };
 
-export const uploadProfilePicture =
-  multer({
-    storage,
-    fileFilter,
-
-    limits: {
-      fileSize:
-        5 * 1024 * 1024,
-    },
-  });
+export const uploadProfilePicture = multer({
+  storage,
+  fileFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024,
+    files: 1,
+    fields: 20,
+    fieldNameSize: 100,
+    fieldSize: 256 * 1024,
+  },
+});
