@@ -7,6 +7,8 @@ import {
   useNavigate,
 } from "react-router-dom";
 
+import toast from "react-hot-toast";
+
 import {
   DndContext,
   DragOverlay,
@@ -25,10 +27,10 @@ import Sidebar from "../components/dashboard/Sidebar";
 import DashboardHeader from "../components/dashboard/DashboardHeader";
 
 import ApplicationForm from "../components/applications/ApplicationForm";
-import DeleteApplicationModal from "../components/applications/DeleteApplicationModal";
 import EditApplicationForm from "../components/applications/EditApplicationForm";
 import ApplicationDetailsModal from "../components/applications/ApplicationDetailsModal";
 import ApplicationCard from "../components/applications/ApplicationCard";
+import ConfirmModal from "../components/common/ConfirmModal";
 
 import {
   getApplications,
@@ -289,6 +291,62 @@ function Applications() {
   }, []);
 
   /* =========================================================
+     CREATE / UPDATE CALLBACKS
+  ========================================================= */
+
+  const handleApplicationCreated =
+    async () => {
+      try {
+        await refreshApplications();
+
+        setShowAddForm(
+          false
+        );
+
+        toast.success(
+          "Application added successfully."
+        );
+      } catch (error) {
+        console.error(
+          "Failed to refresh applications:",
+          error
+        );
+
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : "Application was added, but the list could not be refreshed."
+        );
+      }
+    };
+
+  const handleApplicationUpdated =
+    async () => {
+      try {
+        await refreshApplications();
+
+        setApplicationToEdit(
+          null
+        );
+
+        toast.success(
+          "Application updated successfully."
+        );
+      } catch (error) {
+        console.error(
+          "Failed to refresh applications:",
+          error
+        );
+
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : "Application was updated, but the list could not be refreshed."
+        );
+      }
+    };
+
+  /* =========================================================
      DELETE APPLICATION
   ========================================================= */
 
@@ -309,28 +367,36 @@ function Applications() {
           applicationToDelete.id
         );
 
+        setApplications(
+          (
+            currentApplications
+          ) =>
+            currentApplications.filter(
+              (
+                application
+              ) =>
+                application.id !==
+                applicationToDelete.id
+            )
+        );
+
         setApplicationToDelete(
           null
         );
 
-        await loadApplications();
+        toast.success(
+          "Application deleted successfully."
+        );
       } catch (error) {
         console.error(
           error
         );
 
-        if (
-          error instanceof
-          Error
-        ) {
-          setError(
-            error.message
-          );
-        } else {
-          setError(
-            "Failed to delete application."
-          );
-        }
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : "Failed to delete application."
+        );
       } finally {
         setDeleting(false);
       }
@@ -772,6 +838,10 @@ function Applications() {
         */
 
         await refreshApplications();
+
+        toast.success(
+          `Application moved to ${targetStatus}.`
+        );
       } catch (error) {
         console.error(
           "Failed to move application:",
@@ -798,6 +868,12 @@ function Applications() {
             "Could not move application. The change was reverted."
           );
         }
+
+        toast.error(
+          error instanceof Error
+            ? `Could not move application: ${error.message}`
+            : "Could not move application. The change was reverted."
+        );
       } finally {
         setMovingApplicationId(
           null
@@ -1357,7 +1433,7 @@ function Applications() {
           }
 
           onCreated={
-            loadApplications
+            handleApplicationCreated
           }
         />
       )}
@@ -1366,31 +1442,35 @@ function Applications() {
           DELETE MODAL
       ===================================================== */}
 
-      {applicationToDelete && (
-        <DeleteApplicationModal
-          company={
-            applicationToDelete.company
-          }
-
-          jobTitle={
-            applicationToDelete.job_title
-          }
-
-          loading={
-            deleting
-          }
-
-          onCancel={() =>
+      <ConfirmModal
+        isOpen={
+          Boolean(
+            applicationToDelete
+          )
+        }
+        title="Delete application?"
+        message={
+          applicationToDelete
+            ? `Are you sure you want to delete the ${applicationToDelete.job_title} application at ${applicationToDelete.company}? This action cannot be undone.`
+            : ""
+        }
+        confirmText="Delete"
+        cancelText="Cancel"
+        loading={
+          deleting
+        }
+        danger
+        onCancel={() => {
+          if (!deleting) {
             setApplicationToDelete(
               null
-            )
+            );
           }
-
-          onConfirm={
-            handleDeleteApplication
-          }
-        />
-      )}
+        }}
+        onConfirm={
+          handleDeleteApplication
+        }
+      />
 
       {/* =====================================================
           EDIT MODAL
@@ -1409,7 +1489,7 @@ function Applications() {
           }
 
           onUpdated={
-            loadApplications
+            handleApplicationUpdated
           }
         />
       )}

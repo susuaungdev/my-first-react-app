@@ -8,10 +8,13 @@ import {
   useNavigate,
 } from "react-router-dom";
 
+import toast from "react-hot-toast";
+
 import Sidebar from "../components/dashboard/Sidebar";
 import DashboardHeader from "../components/dashboard/DashboardHeader";
 
 import SavedJobForm from "../components/savedJobs/SavedJobForm";
+import ConfirmModal from "../components/common/ConfirmModal";
 
 import {
   deleteSavedJob,
@@ -169,6 +172,14 @@ function SavedJobs() {
       number | null
     >(null);
 
+  const [
+    jobToDelete,
+    setJobToDelete,
+  ] =
+    useState<
+      SavedJob | null
+    >(null);
+
   /* =========================================================
      CONVERT STATE
   ========================================================= */
@@ -247,6 +258,10 @@ function SavedJobs() {
       setShowCreateForm(
         false
       );
+
+      toast.success(
+        "Job saved successfully."
+      );
     };
 
   /* =========================================================
@@ -275,6 +290,10 @@ function SavedJobs() {
 
       setSavedJobToEdit(
         null
+      );
+
+      toast.success(
+        "Saved job updated successfully."
       );
     };
 
@@ -676,19 +695,24 @@ function SavedJobs() {
      DELETE SAVED JOB
   ========================================================= */
 
-  const handleDelete =
-    async (
+  const handleDeleteClick =
+    (
       savedJob:
         SavedJob
     ) => {
-      const confirmed =
-        window.confirm(
-          `Are you sure you want to delete "${savedJob.job_title}" at ${savedJob.company}?`
-        );
+      setJobToDelete(
+        savedJob
+      );
+    };
 
-      if (!confirmed) {
+  const handleConfirmDelete =
+    async () => {
+      if (!jobToDelete) {
         return;
       }
+
+      const savedJob =
+        jobToDelete;
 
       try {
         setDeletingId(
@@ -718,24 +742,25 @@ function SavedJobs() {
                 savedJob.id
             )
         );
+
+        setJobToDelete(
+          null
+        );
+
+        toast.success(
+          "Saved job deleted successfully."
+        );
       } catch (error) {
         console.error(
           "Failed to delete saved job:",
           error
         );
 
-        if (
-          error instanceof
-          Error
-        ) {
-          setError(
-            error.message
-          );
-        } else {
-          setError(
-            "Failed to delete saved job."
-          );
-        }
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : "Failed to delete saved job."
+        );
       } finally {
         setDeletingId(
           null
@@ -1454,7 +1479,7 @@ function SavedJobs() {
                                     disabled
                                   }
                                   onClick={() =>
-                                    handleDelete(
+                                    handleDeleteClick(
                                       savedJob
                                     )
                                   }
@@ -1651,6 +1676,43 @@ function SavedJobs() {
           }
         />
       )}
+
+      <ConfirmModal
+        isOpen={
+          Boolean(
+            jobToDelete
+          )
+        }
+        title="Delete saved job?"
+        message={
+          jobToDelete
+            ? `Are you sure you want to delete "${jobToDelete.job_title}" at ${jobToDelete.company}? This action cannot be undone.`
+            : ""
+        }
+        confirmText="Delete"
+        cancelText="Cancel"
+        loading={
+          Boolean(
+            jobToDelete &&
+              deletingId ===
+                jobToDelete.id
+          )
+        }
+        danger
+        onCancel={() => {
+          if (
+            deletingId ===
+            null
+          ) {
+            setJobToDelete(
+              null
+            );
+          }
+        }}
+        onConfirm={
+          handleConfirmDelete
+        }
+      />
 
     </>
   );
