@@ -3,6 +3,8 @@ import {
   useState,
 } from "react";
 
+import toast from "react-hot-toast";
+
 import {
   createApplication,
   type CreateApplicationData,
@@ -15,7 +17,7 @@ import {
 
 type ApplicationFormProps = {
   onClose: () => void;
-  onCreated: () => void;
+  onCreated: () => void | Promise<void>;
 };
 
 function ApplicationForm({
@@ -169,6 +171,26 @@ function ApplicationForm({
         "Company and job title are required."
       );
 
+      toast.error("Company and job title are required.");
+
+      return;
+    }
+
+    if (jobUrl.trim()) {
+      try {
+        new URL(jobUrl.trim());
+      } catch {
+        const message = "Please enter a valid job URL.";
+        setError(message);
+        toast.error(message);
+        return;
+      }
+    }
+
+    if (dateApplied && deadline && deadline < dateApplied) {
+      const message = "The deadline cannot be earlier than the application date.";
+      setError(message);
+      toast.error(message);
       return;
     }
 
@@ -232,9 +254,7 @@ function ApplicationForm({
         applicationData
       );
 
-      onCreated();
-
-      onClose();
+      await onCreated();
     } catch (error) {
       console.error(error);
 
@@ -244,10 +264,14 @@ function ApplicationForm({
         setError(
           error.message
         );
+
+        toast.error(error.message);
       } else {
         setError(
           "Failed to create application."
         );
+
+        toast.error("Failed to create application.");
       }
     } finally {
       setLoading(false);

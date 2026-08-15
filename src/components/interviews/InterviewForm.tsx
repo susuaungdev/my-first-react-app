@@ -3,6 +3,8 @@ import {
   useState,
 } from "react";
 
+import toast from "react-hot-toast";
+
 import {
   createInterview,
   updateInterview,
@@ -26,9 +28,9 @@ type InterviewFormProps = {
 
   onClose: () => void;
 
-  onCreated?: () => void;
+  onCreated?: () => void | Promise<void>;
 
-  onUpdated?: () => void;
+  onUpdated?: () => void | Promise<void>;
 };
 
 /* =========================================================
@@ -280,6 +282,8 @@ function InterviewForm({
         "Interview type is required."
       );
 
+      toast.error("Interview type is required.");
+
       return false;
     }
 
@@ -287,6 +291,8 @@ function InterviewForm({
       setError(
         "Interview date and time are required."
       );
+
+      toast.error("Interview date and time are required.");
 
       return false;
     }
@@ -300,6 +306,8 @@ function InterviewForm({
       setError(
         "Please enter a valid interviewer email."
       );
+
+      toast.error("Please enter a valid interviewer email.");
 
       return false;
     }
@@ -316,8 +324,17 @@ function InterviewForm({
           "Please enter a valid meeting URL."
         );
 
+        toast.error("Please enter a valid meeting URL.");
+
         return false;
       }
+    }
+
+    if (followUpDate && scheduledAt && followUpDate < scheduledAt) {
+      const message = "The follow-up date cannot be earlier than the interview date.";
+      setError(message);
+      toast.error(message);
+      return false;
     }
 
     setError("");
@@ -393,9 +410,9 @@ function InterviewForm({
 
         if (onUpdated) {
           await onUpdated();
+        } else {
+          onClose();
         }
-
-        onClose();
 
         return;
       }
@@ -448,9 +465,9 @@ function InterviewForm({
 
       if (onCreated) {
         await onCreated();
+      } else {
+        onClose();
       }
-
-      onClose();
     } catch (error) {
       console.error(
         isEditMode
@@ -465,12 +482,15 @@ function InterviewForm({
         setError(
           error.message
         );
+
+        toast.error(error.message);
       } else {
-        setError(
-          isEditMode
-            ? "Failed to update interview."
-            : "Failed to create interview."
-        );
+        const message = isEditMode
+          ? "Failed to update interview."
+          : "Failed to create interview.";
+
+        setError(message);
+        toast.error(message);
       }
     } finally {
       setLoading(false);

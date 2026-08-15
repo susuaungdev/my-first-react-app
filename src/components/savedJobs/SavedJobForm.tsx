@@ -2,6 +2,8 @@ import {
   useState,
 } from "react";
 
+import toast from "react-hot-toast";
+
 import {
   createSavedJob,
   updateSavedJob,
@@ -147,6 +149,8 @@ function SavedJobForm({
           "Company is required."
         );
 
+        toast.error("Company is required.");
+
         return false;
       }
 
@@ -156,6 +160,8 @@ function SavedJobForm({
         setError(
           "Job title is required."
         );
+
+        toast.error("Job title is required.");
 
         return false;
       }
@@ -171,6 +177,8 @@ function SavedJobForm({
           setError(
             "Please enter a valid job URL."
           );
+
+          toast.error("Please enter a valid job URL.");
 
           return false;
         }
@@ -249,12 +257,12 @@ function SavedJobForm({
           if (
             onUpdated
           ) {
-            onUpdated(
+            await onUpdated(
               response.savedJob
             );
+          } else {
+            onClose();
           }
-
-          onClose();
 
           return;
         }
@@ -271,12 +279,12 @@ function SavedJobForm({
         if (
           onCreated
         ) {
-          onCreated(
+          await onCreated(
             response.savedJob
           );
+        } else {
+          onClose();
         }
-
-        onClose();
       } catch (error) {
         console.error(
           isEditMode
@@ -292,12 +300,15 @@ function SavedJobForm({
           setError(
             error.message
           );
+
+          toast.error(error.message);
         } else {
-          setError(
-            isEditMode
-              ? "Failed to update saved job."
-              : "Failed to save job."
-          );
+          const message = isEditMode
+            ? "Failed to update saved job."
+            : "Failed to save job.";
+
+          setError(message);
+          toast.error(message);
         }
       } finally {
         setLoading(false);
