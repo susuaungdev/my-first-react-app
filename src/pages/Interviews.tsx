@@ -8,6 +8,8 @@ import {
   useNavigate,
 } from "react-router-dom";
 
+import toast from "react-hot-toast";
+
 import Sidebar from "../components/dashboard/Sidebar";
 import DashboardHeader from "../components/dashboard/DashboardHeader";
 
@@ -23,6 +25,7 @@ import {
 } from "../services/applicationService";
 
 import InterviewForm from "../components/interviews/InterviewForm";
+import ConfirmModal from "../components/common/ConfirmModal";
 
 /* =========================================================
    FILTER TYPES
@@ -189,6 +192,14 @@ function Interviews() {
   ] =
     useState<
       number | null
+    >(null);
+
+  const [
+    interviewToDelete,
+    setInterviewToDelete,
+  ] =
+    useState<
+      Interview | null
     >(null);
 
   /* =========================================================
@@ -667,6 +678,10 @@ function Interviews() {
           "The application linked to this interview could not be found."
         );
 
+        toast.error(
+          "The application linked to this interview could not be found."
+        );
+
         return;
       }
 
@@ -700,28 +715,50 @@ function Interviews() {
 
   const handleUpdated =
     async () => {
-      await loadData();
+      try {
+        await loadData();
 
-      handleCloseEdit();
+        handleCloseEdit();
+
+        toast.success(
+          "Interview updated successfully."
+        );
+      } catch (error) {
+        console.error(
+          "Failed to refresh interviews:",
+          error
+        );
+
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : "Interview was updated, but the list could not be refreshed."
+        );
+      }
     };
 
   /* =========================================================
      DELETE INTERVIEW
   ========================================================= */
 
-  const handleDelete =
-    async (
+  const handleDeleteClick =
+    (
       interview:
         Interview
     ) => {
-      const confirmed =
-        window.confirm(
-          `Are you sure you want to delete "${interview.interview_type}"?`
-        );
+      setInterviewToDelete(
+        interview
+      );
+    };
 
-      if (!confirmed) {
+  const handleConfirmDelete =
+    async () => {
+      if (!interviewToDelete) {
         return;
       }
+
+      const interview =
+        interviewToDelete;
 
       try {
         setDeletingId(
@@ -734,25 +771,37 @@ function Interviews() {
           interview.id
         );
 
-        await loadData();
+        setInterviews(
+          (
+            currentInterviews
+          ) =>
+            currentInterviews.filter(
+              (
+                currentInterview
+              ) =>
+                currentInterview.id !==
+                interview.id
+            )
+        );
+
+        setInterviewToDelete(
+          null
+        );
+
+        toast.success(
+          "Interview deleted successfully."
+        );
       } catch (error) {
         console.error(
           "Failed to delete interview:",
           error
         );
 
-        if (
-          error instanceof
-          Error
-        ) {
-          setError(
-            error.message
-          );
-        } else {
-          setError(
-            "Failed to delete interview."
-          );
-        }
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : "Failed to delete interview."
+        );
       } finally {
         setDeletingId(
           null
@@ -1386,7 +1435,7 @@ function Interviews() {
                               <button
                                 type="button"
                                 onClick={() =>
-                                  handleDelete(
+                                  handleDeleteClick(
                                     interview
                                   )
                                 }
@@ -1595,6 +1644,43 @@ function Interviews() {
             }
           />
         )}
+
+      <ConfirmModal
+        isOpen={
+          Boolean(
+            interviewToDelete
+          )
+        }
+        title="Delete interview?"
+        message={
+          interviewToDelete
+            ? `Are you sure you want to delete the ${interviewToDelete.interview_type} interview? This action cannot be undone.`
+            : ""
+        }
+        confirmText="Delete"
+        cancelText="Cancel"
+        loading={
+          Boolean(
+            interviewToDelete &&
+              deletingId ===
+                interviewToDelete.id
+          )
+        }
+        danger
+        onCancel={() => {
+          if (
+            deletingId ===
+            null
+          ) {
+            setInterviewToDelete(
+              null
+            );
+          }
+        }}
+        onConfirm={
+          handleConfirmDelete
+        }
+      />
 
     </>
   );
