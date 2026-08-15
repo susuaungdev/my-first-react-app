@@ -7,10 +7,34 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Dependencies
 node_modules
+backend/node_modules
+
+# Build output
 dist
 dist-ssr
-*.local
+backend/dist
+coverage
+*.tsbuildinfo
+
+# Environment files containing secrets
+.env
+backend/.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Allow safe example files
+!.env.example
+!backend/.env.example
+
+# User uploads
+backend/uploads/*
+
+# Keep uploads directory available
+!backend/uploads/.gitkeep
 
 # Editor directories and files
 .vscode/*

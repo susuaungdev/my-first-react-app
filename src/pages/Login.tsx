@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import { API_URL } from "../services/api";
 
 function Login() {
   const navigate = useNavigate();
@@ -27,7 +28,7 @@ function Login() {
       setLoading(true);
 
       const response = await fetch(
-        "http://localhost:5000/api/auth/login",
+        `${API_URL}/auth/login`,
         {
           method: "POST",
           headers: {
