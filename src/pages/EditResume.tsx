@@ -9,6 +9,8 @@ import {
   useParams,
 } from "react-router-dom";
 
+import toast from "react-hot-toast";
+
 import Sidebar from "../components/dashboard/Sidebar";
 
 import {
@@ -260,6 +262,10 @@ function EditResume() {
             "Invalid resume ID."
           );
 
+          toast.error(
+            "Invalid resume ID."
+          );
+
           setLoading(false);
 
           return;
@@ -275,6 +281,10 @@ function EditResume() {
           resumeId <= 0
         ) {
           setError(
+            "Invalid resume ID."
+          );
+
+          toast.error(
             "Invalid resume ID."
           );
 
@@ -413,8 +423,16 @@ function EditResume() {
             setError(
               error.message
             );
+
+            toast.error(
+              error.message
+            );
           } else {
             setError(
+              "Failed to load resume."
+            );
+
+            toast.error(
               "Failed to load resume."
             );
           }
@@ -598,6 +616,10 @@ function EditResume() {
     e.preventDefault();
 
     if (!id) {
+      toast.error(
+        "Invalid resume ID."
+      );
+
       return;
     }
 
@@ -614,11 +636,19 @@ function EditResume() {
         "Invalid resume ID."
       );
 
+      toast.error(
+        "Invalid resume ID."
+      );
+
       return;
     }
 
     if (!title.trim()) {
       setError(
+        "Resume title is required."
+      );
+
+      toast.error(
         "Resume title is required."
       );
 
@@ -694,6 +724,10 @@ function EditResume() {
         }
       );
 
+      toast.success(
+        "Resume updated successfully."
+      );
+
       navigate(
         `/resumes/${resumeId}`
       );
@@ -708,8 +742,16 @@ function EditResume() {
         setError(
           error.message
         );
+
+        toast.error(
+          error.message
+        );
       } else {
         setError(
+          "Failed to update resume."
+        );
+
+        toast.error(
           "Failed to update resume."
         );
       }
