@@ -111,7 +111,7 @@ app.use("/api/notifications", notificationRoutes);
 
 app.get("/", (_req: Request, res: Response) => {
   res.status(200).json({
-    message: "CareerFlow API is running ",
+    message: "CareerFlow API is running 🚀",
   });
 });
 
@@ -158,4 +158,9 @@ const startServer = async () => {
   }
 };
 
-void startServer();
+if (NODE_ENV !== "test") {
+  void startServer();
+}
+
+export { app };
+export default app;
