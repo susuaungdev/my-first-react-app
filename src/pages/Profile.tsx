@@ -8,6 +8,8 @@ import {
   useNavigate,
 } from "react-router-dom";
 
+import toast from "react-hot-toast";
+
 import Sidebar from "../components/dashboard/Sidebar";
 import DashboardHeader from "../components/dashboard/DashboardHeader";
 
@@ -175,22 +177,6 @@ function CameraIcon() {
   );
 }
 
-function EditIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      className="h-4 w-4"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-    >
-      <path d="M12 20h9" />
-
-      <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z" />
-    </svg>
-  );
-}
-
 /* =========================================================
    PROFILE
 ========================================================= */
@@ -322,12 +308,6 @@ function Profile() {
     useState(false);
 
   const [error, setError] =
-    useState("");
-
-  const [
-    success,
-    setSuccess,
-  ] =
     useState("");
 
   /* =========================================================
@@ -463,6 +443,10 @@ function Profile() {
         "Please choose a JPG, PNG, or WebP image."
       );
 
+      toast.error(
+        "Please choose a JPG, PNG, or WebP image."
+      );
+
       return;
     }
 
@@ -471,6 +455,10 @@ function Profile() {
       5 * 1024 * 1024
     ) {
       setError(
+        "Profile picture must be smaller than 5 MB."
+      );
+
+      toast.error(
         "Profile picture must be smaller than 5 MB."
       );
 
@@ -522,7 +510,6 @@ function Profile() {
     }
 
     setError("");
-    setSuccess("");
     setEditing(false);
   };
 
@@ -538,7 +525,6 @@ function Profile() {
     try {
       setSaving(true);
       setError("");
-      setSuccess("");
 
       const formData =
         new FormData();
@@ -630,7 +616,7 @@ function Profile() {
 
       setEditing(false);
 
-      setSuccess(
+      toast.success(
         "Profile updated successfully."
       );
     } catch (error) {
@@ -642,8 +628,16 @@ function Profile() {
         setError(
           error.message
         );
+
+        toast.error(
+          error.message
+        );
       } else {
         setError(
+          "Failed to save profile."
+        );
+
+        toast.error(
           "Failed to save profile."
         );
       }
@@ -804,12 +798,6 @@ function Profile() {
             </div>
           )}
 
-          {success && (
-            <div className="relative z-20 mt-5 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-              {success}
-            </div>
-          )}
-
           {!editing ? (
             /* ===============================================
                PROFILE VIEW
@@ -859,7 +847,6 @@ function Profile() {
                 <button
                   onClick={() => {
                     setEditing(true);
-                    setSuccess("");
                   }}
                   className="mt-5 w-full rounded-md bg-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
                 >
