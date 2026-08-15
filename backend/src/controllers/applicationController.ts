@@ -1,6 +1,61 @@
 import { Request, Response } from "express";
 import db from "../config/db";
 
+class ValidationError extends Error {}
+
+const applicationStatuses = new Set([
+  "Saved", "Applied", "Screening", "Interview", "Technical Interview",
+  "Final Interview", "Offer", "Rejected", "Withdrawn",
+]);
+
+const text = (value: unknown, label: string, max: number, required = false) => {
+  if (value === undefined || value === null || value === "") {
+    if (required) throw new ValidationError(`${label} is required`);
+    return "";
+  }
+  if (typeof value !== "string") throw new ValidationError(`Invalid ${label.toLowerCase()}`);
+  const cleaned = value.trim();
+  if (required && !cleaned) throw new ValidationError(`${label} is required`);
+  if (cleaned.length > max) throw new ValidationError(`${label} is too long`);
+  return cleaned;
+};
+
+const httpUrl = (value: unknown) => {
+  const cleaned = text(value, "Job URL", 2048);
+  if (!cleaned) return "";
+  try {
+    const parsed = new URL(cleaned);
+    if (!["http:", "https:"].includes(parsed.protocol)) throw new Error();
+  } catch { throw new ValidationError("Please enter a valid job URL"); }
+  return cleaned;
+};
+
+const validateApplicationInput = (body: Record<string, unknown> = {}) => {
+  const status = text(body.status, "Status", 50) || "Saved";
+  if (!applicationStatuses.has(status)) throw new ValidationError("Invalid application status");
+  const dateApplied = text(body.date_applied, "Application date", 30);
+  const deadline = text(body.deadline, "Deadline", 30);
+  if (dateApplied && deadline && deadline < dateApplied) {
+    throw new ValidationError("Deadline cannot be earlier than the application date");
+  }
+  return {
+    company: text(body.company, "Company", 200, true),
+    job_title: text(body.job_title, "Job title", 200, true),
+    location: text(body.location, "Location", 200),
+    job_url: httpUrl(body.job_url),
+    salary: text(body.salary, "Salary", 100),
+    employment_type: text(body.employment_type, "Employment type", 50) || "Full-time",
+    description: text(body.description, "Description", 10000),
+    date_applied: dateApplied,
+    deadline,
+    status,
+    notes: text(body.notes, "Notes", 10000),
+    interview_date: text(body.interview_date, "Interview date", 30),
+    contact_person: text(body.contact_person, "Contact person", 200),
+    resume_id: body.resume_id,
+  };
+};
+
 /* =========================================================
    CREATE APPLICATION
 ========================================================= */
@@ -30,21 +85,11 @@ export const createApplication = async (
       interview_date,
       contact_person,
       resume_id,
-    } = req.body || {};
+    } = validateApplicationInput(req.body || {});
 
     if (!userId) {
       return res.status(401).json({
         message: "Unauthorized",
-      });
-    }
-
-    if (
-      !company ||
-      !job_title
-    ) {
-      return res.status(400).json({
-        message:
-          "Company and job title are required",
       });
     }
 
@@ -61,9 +106,7 @@ export const createApplication = async (
         Number(resume_id);
 
       if (
-        Number.isNaN(
-          parsedResumeId
-        ) ||
+        !Number.isInteger(parsedResumeId) ||
         parsedResumeId <= 0
       ) {
         return res.status(400).json({
@@ -146,8 +189,8 @@ export const createApplication = async (
         `,
         [
           userId,
-          company.trim(),
-          job_title.trim(),
+          company,
+          job_title,
           location || null,
           job_url || null,
           salary || null,
@@ -199,9 +242,9 @@ export const createApplication = async (
       application: {
         id: applicationId,
         company:
-          company.trim(),
+          company,
         job_title:
-          job_title.trim(),
+          job_title,
         status:
           initialStatus,
         resume_id:
@@ -210,6 +253,10 @@ export const createApplication = async (
     });
   } catch (error) {
     await connection.rollback();
+
+    if (error instanceof ValidationError) {
+      return res.status(400).json({ message: error.message });
+    }
 
     console.error(
       "Create application error:",
@@ -330,9 +377,7 @@ export const getApplicationById =
       }
 
       if (
-        Number.isNaN(
-          applicationId
-        ) ||
+          !Number.isInteger(applicationId) ||
         applicationId <= 0
       ) {
         return res.status(400).json({
@@ -440,9 +485,7 @@ export const getApplicationStatusHistory =
       }
 
       if (
-        Number.isNaN(
-          applicationId
-        ) ||
+          !Number.isInteger(applicationId) ||
         applicationId <= 0
       ) {
         return res.status(400).json({
@@ -555,9 +598,7 @@ export const deleteApplication =
       }
 
       if (
-        Number.isNaN(
-          applicationId
-        ) ||
+          !Number.isInteger(applicationId) ||
         applicationId <= 0
       ) {
         return res.status(400).json({
@@ -641,9 +682,7 @@ export const updateApplication =
       }
 
       if (
-        Number.isNaN(
-          applicationId
-        ) ||
+          !Number.isInteger(applicationId) ||
         applicationId <= 0
       ) {
         return res.status(400).json({
@@ -667,17 +706,7 @@ export const updateApplication =
         interview_date,
         contact_person,
         resume_id,
-      } = req.body || {};
-
-      if (
-        !company ||
-        !job_title
-      ) {
-        return res.status(400).json({
-          message:
-            "Company and job title are required",
-        });
-      }
+      } = validateApplicationInput(req.body || {});
 
       /* =====================================================
          VALIDATE SELECTED RESUME
@@ -692,9 +721,7 @@ export const updateApplication =
           Number(resume_id);
 
         if (
-          Number.isNaN(
-            parsedResumeId
-          ) ||
+          !Number.isInteger(parsedResumeId) ||
           parsedResumeId <= 0
         ) {
           return res.status(400).json({
@@ -811,8 +838,8 @@ export const updateApplication =
             AND user_id = ?
           `,
           [
-            company.trim(),
-            job_title.trim(),
+            company,
+            job_title,
             location || null,
             job_url || null,
             salary || null,
@@ -892,6 +919,10 @@ export const updateApplication =
       });
     } catch (error) {
       await connection.rollback();
+
+      if (error instanceof ValidationError) {
+        return res.status(400).json({ message: error.message });
+      }
 
       console.error(
         "Update application error:",

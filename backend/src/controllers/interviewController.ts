@@ -1,6 +1,58 @@
 import { Request, Response } from "express";
 import db from "../config/db";
 
+class ValidationError extends Error {}
+
+const interviewResults = new Set(["Pending", "Passed", "Failed", "Offer", "Cancelled"]);
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const text = (value: unknown, label: string, max: number, required = false) => {
+  if (value === undefined || value === null || value === "") {
+    if (required) throw new ValidationError(`${label} is required`);
+    return "";
+  }
+  if (typeof value !== "string") throw new ValidationError(`Invalid ${label.toLowerCase()}`);
+  const cleaned = value.trim();
+  if (required && !cleaned) throw new ValidationError(`${label} is required`);
+  if (cleaned.length > max) throw new ValidationError(`${label} is too long`);
+  return cleaned;
+};
+
+const validateInterviewInput = (body: Record<string, unknown> = {}, includeApplication = false) => {
+  const interviewerEmail = text(body.interviewer_email, "Interviewer email", 254);
+  if (interviewerEmail && !emailPattern.test(interviewerEmail)) {
+    throw new ValidationError("Please enter a valid interviewer email");
+  }
+  const meetingUrl = text(body.meeting_url, "Meeting URL", 2048);
+  if (meetingUrl) {
+    try {
+      const parsed = new URL(meetingUrl);
+      if (!["http:", "https:"].includes(parsed.protocol)) throw new Error();
+    } catch { throw new ValidationError("Please enter a valid meeting URL"); }
+  }
+  const scheduledAt = text(body.scheduled_at, "Interview date and time", 40, true);
+  const followUpDate = text(body.follow_up_date, "Follow-up date", 40);
+  if (followUpDate && followUpDate < scheduledAt) {
+    throw new ValidationError("Follow-up date cannot be earlier than the interview date");
+  }
+  const result = text(body.result, "Interview result", 30) || "Pending";
+  if (!interviewResults.has(result)) throw new ValidationError("Invalid interview result");
+  return {
+    application_id: includeApplication ? body.application_id : undefined,
+    interview_type: text(body.interview_type, "Interview type", 100, true),
+    scheduled_at: scheduledAt,
+    timezone: text(body.timezone, "Timezone", 100),
+    interviewer_name: text(body.interviewer_name, "Interviewer name", 200),
+    interviewer_email: interviewerEmail,
+    location: text(body.location, "Location", 300),
+    meeting_url: meetingUrl,
+    notes: text(body.notes, "Notes", 10000),
+    preparation_notes: text(body.preparation_notes, "Preparation notes", 10000),
+    result,
+    follow_up_date: followUpDate,
+  };
+};
+
 /* =========================================================
    CREATE INTERVIEW
 ========================================================= */
@@ -31,7 +83,7 @@ export const createInterview = async (
       preparation_notes,
       result,
       follow_up_date,
-    } = req.body || {};
+    } = validateInterviewInput(req.body || {}, true);
 
     if (!application_id) {
       return res.status(400).json({
@@ -55,7 +107,7 @@ export const createInterview = async (
       Number(application_id);
 
     if (
-      Number.isNaN(applicationId) ||
+      !Number.isInteger(applicationId) ||
       applicationId <= 0
     ) {
       return res.status(400).json({
@@ -122,7 +174,7 @@ export const createInterview = async (
         [
           userId,
           applicationId,
-          interview_type.trim(),
+          interview_type,
           scheduled_at,
           timezone || null,
           interviewer_name || null,
@@ -146,13 +198,15 @@ export const createInterview = async (
         application_id:
           applicationId,
 
-        interview_type:
-          interview_type.trim(),
+          interview_type,
 
         scheduled_at,
       },
     });
   } catch (error) {
+    if (error instanceof ValidationError) {
+      return res.status(400).json({ message: error.message });
+    }
     console.error(
       "Create interview error:",
       error
@@ -262,7 +316,7 @@ export const getInterviewById =
       }
 
       if (
-        Number.isNaN(interviewId) ||
+        !Number.isInteger(interviewId) ||
         interviewId <= 0
       ) {
         return res.status(400).json({
@@ -366,9 +420,7 @@ export const getApplicationInterviews =
       }
 
       if (
-        Number.isNaN(
-          applicationId
-        ) ||
+        !Number.isInteger(applicationId) ||
         applicationId <= 0
       ) {
         return res.status(400).json({
@@ -482,7 +534,7 @@ export const updateInterview =
       }
 
       if (
-        Number.isNaN(interviewId) ||
+        !Number.isInteger(interviewId) ||
         interviewId <= 0
       ) {
         return res.status(400).json({
@@ -503,21 +555,7 @@ export const updateInterview =
         preparation_notes,
         result,
         follow_up_date,
-      } = req.body || {};
-
-      if (!interview_type) {
-        return res.status(400).json({
-          message:
-            "Interview type is required",
-        });
-      }
-
-      if (!scheduled_at) {
-        return res.status(400).json({
-          message:
-            "Interview date and time are required",
-        });
-      }
+      } = validateInterviewInput(req.body || {});
 
       const [updateResult]: any =
         await db.execute(
@@ -541,7 +579,7 @@ export const updateInterview =
             AND user_id = ?
           `,
           [
-            interview_type.trim(),
+            interview_type,
             scheduled_at,
             timezone || null,
             interviewer_name || null,
@@ -572,6 +610,9 @@ export const updateInterview =
           "Interview updated successfully",
       });
     } catch (error) {
+      if (error instanceof ValidationError) {
+        return res.status(400).json({ message: error.message });
+      }
       console.error(
         "Update interview error:",
         error
@@ -607,7 +648,7 @@ export const deleteInterview =
       }
 
       if (
-        Number.isNaN(interviewId) ||
+        !Number.isInteger(interviewId) ||
         interviewId <= 0
       ) {
         return res.status(400).json({
