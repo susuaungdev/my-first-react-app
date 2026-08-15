@@ -1,57 +1,83 @@
-import { NextFunction, Request, Response } from "express";
-import jwt from "jsonwebtoken";
+import {
+  type NextFunction,
+  type Request,
+  type Response,
+} from "express";
+import jwt, { type JwtPayload as JsonWebTokenPayload } from "jsonwebtoken";
 
-
-interface JwtPayload {
-    id: number;
-    email: string;
-}
-
+type CareerFlowJwtPayload = JsonWebTokenPayload & {
+  id: number;
+  email: string;
+};
 
 export const authMiddleware = (
-    req: Request,
-    res: Response,
-    next: NextFunction
+  req: Request,
+  res: Response,
+  next: NextFunction
 ) => {
+  const authHeader = req.headers.authorization;
 
-    const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    res.status(401).json({
+      message: "Access denied. No token provided.",
+    });
+    return;
+  }
 
+  const [scheme, token, extraPart] = authHeader.trim().split(/\s+/);
 
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+  if (scheme !== "Bearer" || !token || extraPart) {
+    res.status(401).json({
+      message: "Access denied. Invalid authorization header.",
+    });
+    return;
+  }
 
-        return res.status(401).json({
-            message: "Access denied. No token provided."
-        });
+  const jwtSecret = process.env.JWT_SECRET;
 
+  if (!jwtSecret?.trim()) {
+    console.error("JWT_SECRET is not configured.");
+
+    res.status(500).json({
+      message: "Authentication is temporarily unavailable.",
+    });
+    return;
+  }
+
+  try {
+    const decoded = jwt.verify(token, jwtSecret, {
+      algorithms: ["HS256"],
+    });
+
+    if (
+      typeof decoded === "string" ||
+      typeof decoded.id !== "number" ||
+      !Number.isInteger(decoded.id) ||
+      decoded.id <= 0 ||
+      typeof decoded.email !== "string" ||
+      !decoded.email.trim()
+    ) {
+      res.status(401).json({
+        message: "Invalid or expired token.",
+      });
+      return;
     }
 
+    const payload = decoded as CareerFlowJwtPayload;
 
-    const token = authHeader.split(" ")[1];
+    req.user = {
+      id: payload.id,
+      email: payload.email.trim().toLowerCase(),
+    };
 
-
-    try {
-
-        const decoded = jwt.verify(
-            token,
-            process.env.JWT_SECRET as string
-        ) as JwtPayload;
-
-
-        req.user = {
-            id: decoded.id,
-            email: decoded.email
-        };
-
-
-        next();
-
-
-    } catch (error) {
-
-        return res.status(401).json({
-            message: "Invalid or expired token"
-        });
-
+    next();
+  } catch (error) {
+    if (!(error instanceof jwt.TokenExpiredError)) {
+      console.warn("JWT verification failed:", error);
     }
 
+    res.status(401).json({
+      message: "Invalid or expired token.",
+    });
+  }
 };
