@@ -7,9 +7,12 @@ import {
   useNavigate,
 } from "react-router-dom";
 
+import toast from "react-hot-toast";
+
 import Sidebar from "../components/dashboard/Sidebar";
 
 import DashboardHeader from "../components/dashboard/DashboardHeader";
+import ConfirmModal from "../components/common/ConfirmModal";
 
 import {
   getResumes,
@@ -91,6 +94,14 @@ function Resumes() {
       number | null
     >(null);
 
+  const [
+    resumeToDelete,
+    setResumeToDelete,
+  ] =
+    useState<
+      Resume | null
+    >(null);
+
   /* =========================================================
      LOGOUT
   ========================================================= */
@@ -163,30 +174,33 @@ function Resumes() {
      DELETE RESUME
   ========================================================= */
 
-  const handleDelete =
-    async (
-      id: number
+  const handleDeleteClick =
+    (
+      resume: Resume
     ) => {
-      const confirmed =
-        window.confirm(
-          "Are you sure you want to delete this resume?"
-        );
+      setResumeToDelete(
+        resume
+      );
+    };
 
-      if (
-        !confirmed
-      ) {
+  const handleConfirmDelete =
+    async () => {
+      if (!resumeToDelete) {
         return;
       }
 
+      const resume =
+        resumeToDelete;
+
       try {
         setDeletingId(
-          id
+          resume.id
         );
 
         setError("");
 
         await deleteResume(
-          id
+          resume.id
         );
 
         /*
@@ -203,8 +217,16 @@ function Resumes() {
                 resume
               ) =>
                 resume.id !==
-                id
+                resumeToDelete.id
             )
+        );
+
+        setResumeToDelete(
+          null
+        );
+
+        toast.success(
+          "Resume deleted successfully."
         );
       } catch (error) {
         console.error(
@@ -212,18 +234,11 @@ function Resumes() {
           error
         );
 
-        if (
-          error instanceof
-          Error
-        ) {
-          setError(
-            error.message
-          );
-        } else {
-          setError(
-            "Failed to delete resume."
-          );
-        }
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : "Failed to delete resume."
+        );
       } finally {
         setDeletingId(
           null
@@ -878,8 +893,8 @@ function Resumes() {
                         <button
                           type="button"
                           onClick={() =>
-                            handleDelete(
-                              resume.id
+                            handleDeleteClick(
+                              resume
                             )
                           }
                           disabled={
@@ -908,6 +923,43 @@ function Resumes() {
         </main>
 
       </div>
+
+      <ConfirmModal
+        isOpen={
+          Boolean(
+            resumeToDelete
+          )
+        }
+        title="Delete resume?"
+        message={
+          resumeToDelete
+            ? `Are you sure you want to delete "${resumeToDelete.title}"? This action cannot be undone.`
+            : ""
+        }
+        confirmText="Delete"
+        cancelText="Cancel"
+        loading={
+          Boolean(
+            resumeToDelete &&
+              deletingId ===
+                resumeToDelete.id
+          )
+        }
+        danger
+        onCancel={() => {
+          if (
+            deletingId ===
+            null
+          ) {
+            setResumeToDelete(
+              null
+            );
+          }
+        }}
+        onConfirm={
+          handleConfirmDelete
+        }
+      />
 
     </div>
   );
