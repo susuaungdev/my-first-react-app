@@ -14,6 +14,11 @@ import Sidebar from "../components/dashboard/Sidebar";
 import DashboardHeader from "../components/dashboard/DashboardHeader";
 
 import SavedJobForm from "../components/savedJobs/SavedJobForm";
+
+import MarkAsAppliedModal, {
+  type MarkAsAppliedData,
+} from "../components/savedJobs/MarkAsAppliedModal";
+
 import ConfirmModal from "../components/common/ConfirmModal";
 
 import {
@@ -28,7 +33,7 @@ import {
 } from "../services/applicationService";
 
 /* =========================================================
-   FILTER TYPES
+   TYPES
 ========================================================= */
 
 type DeadlineFilter =
@@ -36,6 +41,52 @@ type DeadlineFilter =
   | "upcoming"
   | "expired"
   | "no-deadline";
+
+/* =========================================================
+   DATE HELPERS
+========================================================= */
+
+const parseDateOnly = (
+  value: string
+) => {
+  const datePart =
+    value.slice(
+      0,
+      10
+    );
+
+  const [
+    year,
+    month,
+    day,
+  ] = datePart
+    .split("-")
+    .map(Number);
+
+  if (
+    !year ||
+    !month ||
+    !day
+  ) {
+    return null;
+  }
+
+  const date =
+    new Date(
+      year,
+      month - 1,
+      day
+    );
+
+  date.setHours(
+    0,
+    0,
+    0,
+    0
+  );
+
+  return date;
+};
 
 /* =========================================================
    SAVED JOBS PAGE
@@ -53,6 +104,10 @@ function SavedJobs() {
     sidebarOpen,
     setSidebarOpen,
   ] = useState(false);
+
+  /* =========================================================
+     USER
+  ========================================================= */
 
   const storedUser =
     localStorage.getItem(
@@ -91,7 +146,7 @@ function SavedJobs() {
     };
 
   /* =========================================================
-     DATA
+     SAVED JOBS
   ========================================================= */
 
   const [
@@ -103,20 +158,18 @@ function SavedJobs() {
     >([]);
 
   /* =========================================================
-     LOADING / ERROR
+     PAGE STATUS
   ========================================================= */
 
   const [
     loading,
     setLoading,
-  ] =
-    useState(true);
+  ] = useState(true);
 
   const [
     error,
     setError,
-  ] =
-    useState("");
+  ] = useState("");
 
   /* =========================================================
      FILTERS
@@ -125,14 +178,12 @@ function SavedJobs() {
   const [
     search,
     setSearch,
-  ] =
-    useState("");
+  ] = useState("");
 
   const [
     employmentTypeFilter,
     setEmploymentTypeFilter,
-  ] =
-    useState("all");
+  ] = useState("all");
 
   const [
     deadlineFilter,
@@ -143,22 +194,21 @@ function SavedJobs() {
     );
 
   /* =========================================================
-     FORM STATE
+     CREATE / EDIT STATE
   ========================================================= */
 
   const [
     showCreateForm,
     setShowCreateForm,
-  ] =
-    useState(false);
+  ] = useState(false);
 
   const [
     savedJobToEdit,
     setSavedJobToEdit,
   ] =
-    useState<
-      SavedJob | null
-    >(null);
+    useState<SavedJob | null>(
+      null
+    );
 
   /* =========================================================
      DELETE STATE
@@ -168,39 +218,46 @@ function SavedJobs() {
     deletingId,
     setDeletingId,
   ] =
-    useState<
-      number | null
-    >(null);
+    useState<number | null>(
+      null
+    );
 
   const [
     jobToDelete,
     setJobToDelete,
   ] =
-    useState<
-      SavedJob | null
-    >(null);
+    useState<SavedJob | null>(
+      null
+    );
 
   /* =========================================================
-     CONVERT STATE
+     MARK AS APPLIED STATE
   ========================================================= */
+
+  const [
+    jobToApply,
+    setJobToApply,
+  ] =
+    useState<SavedJob | null>(
+      null
+    );
 
   const [
     convertingId,
     setConvertingId,
   ] =
-    useState<
-      number | null
-    >(null);
+    useState<number | null>(
+      null
+    );
 
   /* =========================================================
-     INITIAL LOAD
+     LOAD SAVED JOBS
   ========================================================= */
 
   const loadSavedJobs =
     async () => {
       try {
         setLoading(true);
-
         setError("");
 
         const data =
@@ -216,29 +273,22 @@ function SavedJobs() {
           error
         );
 
-        if (
-          error instanceof
-          Error
-        ) {
-          setError(
-            error.message
-          );
-        } else {
-          setError(
-            "Failed to load saved jobs."
-          );
-        }
+        setError(
+          error instanceof Error
+            ? error.message
+            : "Failed to load saved jobs."
+        );
       } finally {
         setLoading(false);
       }
     };
 
   useEffect(() => {
-    loadSavedJobs();
+    void loadSavedJobs();
   }, []);
 
   /* =========================================================
-     CREATE SAVED JOB IN LOCAL STATE
+     CREATE SAVED JOB
   ========================================================= */
 
   const handleSavedJobCreated =
@@ -258,14 +308,10 @@ function SavedJobs() {
       setShowCreateForm(
         false
       );
-
-      toast.success(
-        "Job saved successfully."
-      );
-    };
+  };
 
   /* =========================================================
-     UPDATE SAVED JOB IN LOCAL STATE
+     UPDATE SAVED JOB
   ========================================================= */
 
   const handleSavedJobUpdated =
@@ -291,10 +337,6 @@ function SavedJobs() {
       setSavedJobToEdit(
         null
       );
-
-      toast.success(
-        "Saved job updated successfully."
-      );
     };
 
   /* =========================================================
@@ -316,9 +358,7 @@ function SavedJobs() {
               (
                 value
               ): value is string =>
-                Boolean(
-                  value
-                )
+                Boolean(value)
             )
         )
       ).sort();
@@ -414,16 +454,15 @@ function SavedJobs() {
             }
 
             const deadlineDate =
-              new Date(
+              parseDateOnly(
                 savedJob.deadline
               );
 
-            deadlineDate.setHours(
-              0,
-              0,
-              0,
-              0
-            );
+            if (
+              !deadlineDate
+            ) {
+              return false;
+            }
 
             if (
               deadlineFilter ===
@@ -499,21 +538,19 @@ function SavedJobs() {
             !savedJob.deadline
           ) {
             noDeadline += 1;
-
             return;
           }
 
           const deadlineDate =
-            new Date(
+            parseDateOnly(
               savedJob.deadline
             );
 
-          deadlineDate.setHours(
-            0,
-            0,
-            0,
-            0
-          );
+          if (
+            !deadlineDate
+          ) {
+            return;
+          }
 
           if (
             deadlineDate <
@@ -559,15 +596,11 @@ function SavedJobs() {
     }
 
     const date =
-      new Date(
+      parseDateOnly(
         value
       );
 
-    if (
-      Number.isNaN(
-        date.getTime()
-      )
-    ) {
+    if (!date) {
       return value;
     }
 
@@ -616,23 +649,26 @@ function SavedJobs() {
       );
 
       const deadlineDate =
-        new Date(
+        parseDateOnly(
           deadline
         );
 
-      deadlineDate.setHours(
-        0,
-        0,
-        0,
-        0
-      );
+      if (!deadlineDate) {
+        return {
+          label:
+            "Invalid deadline",
+
+          classes:
+            "bg-slate-100 text-slate-600",
+        };
+      }
 
       const difference =
         deadlineDate.getTime() -
         today.getTime();
 
       const days =
-        Math.ceil(
+        Math.round(
           difference /
             (
               1000 *
@@ -700,6 +736,8 @@ function SavedJobs() {
       savedJob:
         SavedJob
     ) => {
+      setError("");
+
       setJobToDelete(
         savedJob
       );
@@ -707,7 +745,9 @@ function SavedJobs() {
 
   const handleConfirmDelete =
     async () => {
-      if (!jobToDelete) {
+      if (
+        !jobToDelete
+      ) {
         return;
       }
 
@@ -724,11 +764,6 @@ function SavedJobs() {
         await deleteSavedJob(
           savedJob.id
         );
-
-        /*
-          Remove only the deleted job.
-          No full page reload.
-        */
 
         setSavedJobs(
           (
@@ -756,10 +791,15 @@ function SavedJobs() {
           error
         );
 
-        toast.error(
+        const message =
           error instanceof Error
             ? error.message
-            : "Failed to delete saved job."
+            : "Failed to delete saved job.";
+
+        setError(message);
+
+        toast.error(
+          message
         );
       } finally {
         setDeletingId(
@@ -769,22 +809,41 @@ function SavedJobs() {
     };
 
   /* =========================================================
-     CONVERT TO APPLICATION
+     OPEN MARK AS APPLIED
   ========================================================= */
 
-  const handleConvertToApplication =
-    async (
+  const handleOpenMarkAsApplied =
+    (
       savedJob:
         SavedJob
     ) => {
-      const confirmed =
-        window.confirm(
-          `Convert "${savedJob.job_title}" at ${savedJob.company} into an application?`
-        );
+      setError("");
 
-      if (!confirmed) {
+      setJobToApply(
+        savedJob
+      );
+    };
+
+  /* =========================================================
+     MARK SAVED JOB AS APPLIED
+  ========================================================= */
+
+  const handleMarkAsApplied =
+    async (
+      data:
+        MarkAsAppliedData
+    ) => {
+      if (
+        !jobToApply
+      ) {
         return;
       }
+
+      const savedJob =
+        jobToApply;
+
+      let applicationCreated =
+        false;
 
       try {
         setConvertingId(
@@ -836,33 +895,89 @@ function SavedJobs() {
 
             status:
               "Applied",
+
+            date_applied:
+              data.dateApplied,
+
+            resume_id:
+              data.resumeId,
+
+            contact_person:
+              "",
           };
 
-        /*
-          Create the application first.
-          Do not delete the saved job unless
-          creation succeeds.
-        */
+        /* =====================================================
+           CREATE APPLICATION FIRST
+        ===================================================== */
 
         await createApplication(
           applicationData
         );
 
-        await deleteSavedJob(
-          savedJob.id
+        applicationCreated =
+          true;
+
+        /* =====================================================
+           OPTIONAL SAVED JOB REMOVAL
+        ===================================================== */
+
+        if (
+          data.removeFromSavedJobs
+        ) {
+          try {
+            await deleteSavedJob(
+              savedJob.id
+            );
+
+            setSavedJobs(
+              (
+                currentSavedJobs
+              ) =>
+                currentSavedJobs.filter(
+                  (
+                    item
+                  ) =>
+                    item.id !==
+                    savedJob.id
+                )
+            );
+          } catch (deleteError) {
+            console.error(
+              "Application created, but saved job could not be removed:",
+              deleteError
+            );
+
+            /*
+             * Important:
+             * At this point the application already exists.
+             * We must NOT report that application creation failed.
+             */
+            setJobToApply(
+              null
+            );
+
+            toast.success(
+              "Application created successfully."
+            );
+
+            toast.error(
+              "The job could not be removed from Saved Jobs. You can delete it manually."
+            );
+
+            navigate(
+              "/applications"
+            );
+
+            return;
+          }
+        }
+
+        setJobToApply(
+          null
         );
 
-        setSavedJobs(
-          (
-            currentSavedJobs
-          ) =>
-            currentSavedJobs.filter(
-              (
-                item
-              ) =>
-                item.id !==
-                savedJob.id
-            )
+        toast.success(
+          `"${savedJob.job_title}" marked as applied.`
         );
 
         navigate(
@@ -870,20 +985,28 @@ function SavedJobs() {
         );
       } catch (error) {
         console.error(
-          "Failed to convert saved job:",
+          "Failed to mark saved job as applied:",
           error
         );
 
+        /*
+         * This catch should normally only run if application
+         * creation itself failed.
+         */
         if (
-          error instanceof
-          Error
+          !applicationCreated
         ) {
+          const message =
+            error instanceof Error
+              ? error.message
+              : "Failed to create application.";
+
           setError(
-            error.message
+            message
           );
-        } else {
-          setError(
-            "Failed to convert saved job to application."
+
+          toast.error(
+            message
           );
         }
       } finally {
@@ -899,6 +1022,8 @@ function SavedJobs() {
 
   const handleOpenCreate =
     () => {
+      setError("");
+
       setSavedJobToEdit(
         null
       );
@@ -917,6 +1042,8 @@ function SavedJobs() {
       savedJob:
         SavedJob
     ) => {
+      setError("");
+
       setShowCreateForm(
         false
       );
@@ -988,40 +1115,35 @@ function SavedJobs() {
           isOpen={
             sidebarOpen
           }
-
           onClose={() =>
             setSidebarOpen(
               false
             )
           }
-
           user={
             user
           }
-
           onLogout={
             handleLogout
           }
         />
 
         {/* =====================================================
-            MAIN
+            MAIN CONTENT
         ===================================================== */}
 
         <div className="min-w-0 lg:ml-64">
 
-          {/* =====================================================
-              DESKTOP HEADER
-          ===================================================== */}
-
           <DashboardHeader
-            user={user}
+            user={
+              user
+            }
           />
 
           <main className="mx-auto w-full max-w-[1600px] px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
 
             {/* ===================================================
-                HEADER
+                PAGE HEADER
             =================================================== */}
 
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -1037,9 +1159,9 @@ function SavedJobs() {
                 </h1>
 
                 <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-                  Save opportunities before you apply,
-                  monitor deadlines, and convert the best
-                  jobs into tracked applications.
+                  Save interesting opportunities before applying,
+                  monitor deadlines, and move them into your
+                  application tracker when you apply.
                 </p>
 
               </div>
@@ -1057,7 +1179,7 @@ function SavedJobs() {
             </div>
 
             {/* ===================================================
-                STATS
+                STATISTICS
             =================================================== */}
 
             <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -1113,6 +1235,7 @@ function SavedJobs() {
                     setError("")
                   }
                   className="shrink-0 text-sm font-semibold text-red-600 hover:text-red-800"
+                  aria-label="Dismiss error"
                 >
                   ×
                 </button>
@@ -1183,6 +1306,7 @@ function SavedJobs() {
                     }
                     className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                   >
+
                     <option value="all">
                       All types
                     </option>
@@ -1203,6 +1327,7 @@ function SavedJobs() {
                         </option>
                       )
                     )}
+
                   </select>
 
                 </div>
@@ -1212,14 +1337,14 @@ function SavedJobs() {
                 <div>
 
                   <label
-                    htmlFor="saved-job-deadline"
+                    htmlFor="saved-job-deadline-filter"
                     className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500"
                   >
                     Deadline
                   </label>
 
                   <select
-                    id="saved-job-deadline"
+                    id="saved-job-deadline-filter"
                     value={
                       deadlineFilter
                     }
@@ -1233,6 +1358,7 @@ function SavedJobs() {
                     }
                     className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                   >
+
                     <option value="all">
                       All deadlines
                     </option>
@@ -1248,6 +1374,7 @@ function SavedJobs() {
                     <option value="no-deadline">
                       No deadline
                     </option>
+
                   </select>
 
                 </div>
@@ -1257,19 +1384,25 @@ function SavedJobs() {
               <div className="mt-4 flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
 
                 <p className="text-sm text-slate-500">
+
                   Showing{" "}
+
                   <span className="font-semibold text-slate-700">
                     {
                       filteredSavedJobs.length
                     }
-                  </span>{" "}
-                  of{" "}
+                  </span>
+
+                  {" "}of{" "}
+
                   <span className="font-semibold text-slate-700">
                     {
                       savedJobs.length
                     }
-                  </span>{" "}
-                  saved jobs
+                  </span>
+
+                  {" "}saved jobs
+
                 </p>
 
                 <button
@@ -1287,7 +1420,7 @@ function SavedJobs() {
             </div>
 
             {/* ===================================================
-                INITIAL LOADING
+                LOADING
             =================================================== */}
 
             {loading && (
@@ -1307,7 +1440,7 @@ function SavedJobs() {
             )}
 
             {/* ===================================================
-                EMPTY DATABASE
+                EMPTY STATE
             =================================================== */}
 
             {!loading &&
@@ -1324,9 +1457,9 @@ function SavedJobs() {
                   </h2>
 
                   <p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-slate-500">
-                    Save jobs you are interested in before
-                    applying so you can compare opportunities
-                    and keep track of deadlines.
+                    Save jobs you're interested in so you can compare
+                    opportunities and keep track of deadlines before
+                    applying.
                   </p>
 
                   <button
@@ -1454,7 +1587,7 @@ function SavedJobs() {
 
                               </div>
 
-                              {/* ACTIONS */}
+                              {/* EDIT / DELETE */}
 
                               <div className="flex shrink-0 gap-2">
 
@@ -1597,7 +1730,7 @@ function SavedJobs() {
                               </a>
                             )}
 
-                            {/* CONVERT */}
+                            {/* MARK AS APPLIED */}
 
                             <div className="border-t border-slate-100 pt-5">
 
@@ -1607,7 +1740,7 @@ function SavedJobs() {
                                   disabled
                                 }
                                 onClick={() =>
-                                  handleConvertToApplication(
+                                  handleOpenMarkAsApplied(
                                     savedJob
                                   )
                                 }
@@ -1615,7 +1748,7 @@ function SavedJobs() {
                               >
                                 {isConverting
                                   ? "Creating application..."
-                                  : "Convert to Application"}
+                                  : "Mark as Applied"}
                               </button>
 
                             </div>
@@ -1637,7 +1770,7 @@ function SavedJobs() {
       </div>
 
       {/* =====================================================
-          CREATE FORM
+          CREATE SAVED JOB
       ===================================================== */}
 
       {showCreateForm &&
@@ -1648,7 +1781,6 @@ function SavedJobs() {
                 false
               )
             }
-
             onCreated={
               handleSavedJobCreated
             }
@@ -1656,7 +1788,7 @@ function SavedJobs() {
         )}
 
       {/* =====================================================
-          EDIT FORM
+          EDIT SAVED JOB
       ===================================================== */}
 
       {savedJobToEdit && (
@@ -1664,18 +1796,49 @@ function SavedJobs() {
           savedJob={
             savedJobToEdit
           }
-
           onClose={() =>
             setSavedJobToEdit(
               null
             )
           }
-
           onUpdated={
             handleSavedJobUpdated
           }
         />
       )}
+
+      {/* =====================================================
+          MARK AS APPLIED MODAL
+      ===================================================== */}
+
+      {jobToApply && (
+        <MarkAsAppliedModal
+          savedJob={
+            jobToApply
+          }
+          loading={
+            convertingId ===
+            jobToApply.id
+          }
+          onClose={() => {
+            if (
+              convertingId ===
+              null
+            ) {
+              setJobToApply(
+                null
+              );
+            }
+          }}
+          onConfirm={
+            handleMarkAsApplied
+          }
+        />
+      )}
+
+      {/* =====================================================
+          DELETE MODAL
+      ===================================================== */}
 
       <ConfirmModal
         isOpen={

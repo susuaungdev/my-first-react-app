@@ -1,4 +1,6 @@
-import { Router } from "express";
+import {
+  Router,
+} from "express";
 
 import {
   createResume,
@@ -14,35 +16,50 @@ import {
 
 const router = Router();
 
-/* GET ALL RESUMES */
+/* =========================================================
+   GET ALL RESUMES
+========================================================= */
+
 router.get(
   "/",
   authMiddleware,
   getResumes
 );
 
-/* GET ONE RESUME */
+/* =========================================================
+   GET ONE RESUME
+========================================================= */
+
 router.get(
   "/:id",
   authMiddleware,
   getResumeById
 );
 
-/* CREATE RESUME */
+/* =========================================================
+   CREATE RESUME
+========================================================= */
+
 router.post(
   "/",
   authMiddleware,
   createResume
 );
 
-/* UPDATE RESUME */
+/* =========================================================
+   UPDATE RESUME
+========================================================= */
+
 router.put(
   "/:id",
   authMiddleware,
   updateResume
 );
 
-/* DELETE RESUME */
+/* =========================================================
+   DELETE RESUME
+========================================================= */
+
 router.delete(
   "/:id",
   authMiddleware,

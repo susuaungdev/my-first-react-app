@@ -3,6 +3,7 @@ import {
   useRef,
   useState,
   type ReactNode,
+  type CSSProperties,
 } from "react";
 
 import {
@@ -23,6 +24,8 @@ import {
   type ResumeProject,
   type ResumeTemplate,
   type ResumeAccentColor,
+  type ResumeCanvasData,
+  type ResumeCanvasElement,
 } from "../services/resumeService";
 
 /* =========================================================
@@ -182,6 +185,25 @@ function ResumeDetails() {
     }
   };
 
+  const parseObject = <T,>(
+    value: T | string | null,
+    fallback: T
+  ): T => {
+    if (!value) {
+      return fallback;
+    }
+
+    if (typeof value !== "string") {
+      return value;
+    }
+
+    try {
+      return JSON.parse(value) as T;
+    } catch {
+      return fallback;
+    }
+  };
+
   /* =========================================================
      LOAD RESUME
   ========================================================= */
@@ -273,6 +295,106 @@ function ResumeDetails() {
 
       const resumeElement =
         resumeRef.current;
+
+      const safeTitle =
+        resume.title
+          .trim()
+          .replace(
+            /[^a-z0-9]+/gi,
+            "-"
+          )
+          .replace(
+            /^-+|-+$/g,
+            ""
+          ) || "resume";
+
+      /* ===============================================
+         STUDIO PDF
+      =============================================== */
+
+      if (resume.editor_mode === "studio") {
+        const pageElements =
+          Array.from(
+            resumeElement.querySelectorAll<HTMLElement>(
+              "[data-careerflow-studio-page]"
+            )
+          );
+
+        if (
+          pageElements.length === 0
+        ) {
+          throw new Error(
+            "No Studio pages were found to export."
+          );
+        }
+
+        const pdf = new jsPDF({
+          orientation: "portrait",
+          unit: "mm",
+          format: "a4",
+        });
+
+        for (
+          let index = 0;
+          index < pageElements.length;
+          index += 1
+        ) {
+          const pageElement =
+            pageElements[index];
+
+          const canvas =
+            await html2canvas(
+              pageElement,
+              {
+                scale: 2,
+                useCORS: true,
+                backgroundColor: null,
+                logging: false,
+                width:
+                  pageElement.offsetWidth ||
+                  794,
+                height:
+                  pageElement.offsetHeight ||
+                  1123,
+                windowWidth: 1200,
+              }
+            );
+
+          if (index > 0) {
+            pdf.addPage(
+              "a4",
+              "portrait"
+            );
+          }
+
+          const imageData =
+            canvas.toDataURL(
+              "image/png",
+              1.0
+            );
+
+          pdf.addImage(
+            imageData,
+            "PNG",
+            0,
+            0,
+            210,
+            297,
+            undefined,
+            "FAST"
+          );
+        }
+
+        pdf.save(
+          `${safeTitle}.pdf`
+        );
+
+        return;
+      }
+
+      /* ===============================================
+         TEMPLATE PDF
+      =============================================== */
 
       const previousWidth =
         resumeElement.style.width;
@@ -396,18 +518,6 @@ function ResumeDetails() {
         renderedHeight += sliceHeight;
         pageIndex += 1;
       }
-
-      const safeTitle =
-        resume.title
-          .trim()
-          .replace(
-            /[^a-z0-9]+/gi,
-            "-"
-          )
-          .replace(
-            /^-+|-+$/g,
-            ""
-          ) || "resume";
 
       pdf.save(`${safeTitle}.pdf`);
     } catch (error) {
@@ -572,6 +682,19 @@ function ResumeDetails() {
     resume.accent_color ||
     "blue";
 
+  const studioData =
+    parseObject<ResumeCanvasData | null>(
+      resume.canvas_data,
+      null
+    );
+
+  const studioPages =
+    Array.isArray(
+      studioData?.pages
+    )
+      ? studioData!.pages
+      : [];
+
   /* =========================================================
      PAGE
   ========================================================= */
@@ -623,14 +746,14 @@ function ResumeDetails() {
               </h1>
 
               <p className="mt-2 text-sm text-slate-500">
-                {capitalize(
-                  template
-                )}{" "}
-                template ·{" "}
-                {capitalize(
-                  accentColor
-                )}{" "}
-                theme
+                {resume.editor_mode ===
+                "studio"
+                  ? `CareerFlow Resume Studio · ${Math.max(studioPages.length, 1)} ${Math.max(studioPages.length, 1) === 1 ? "page" : "pages"}`
+                  : `${capitalize(
+                      template
+                    )} template · ${capitalize(
+                      accentColor
+                    )} theme`}
               </p>
 
             </div>
@@ -662,12 +785,18 @@ function ResumeDetails() {
               <button
                 onClick={() =>
                   navigate(
-                    `/resumes/${resume.id}/edit`
+                    resume.editor_mode ===
+                      "studio"
+                      ? `/resumes/${resume.id}/studio`
+                      : `/resumes/${resume.id}/edit`
                   )
                 }
                 className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
               >
-                Edit resume
+                {resume.editor_mode ===
+                "studio"
+                  ? "Open Resume Studio"
+                  : "Edit resume"}
               </button>
 
             </div>
@@ -691,79 +820,110 @@ function ResumeDetails() {
 
           <div className="overflow-auto rounded-2xl border border-slate-200 bg-slate-200/70 p-3 shadow-sm sm:p-5 lg:p-6">
 
-            <div
-              ref={resumeRef}
-              className="mx-auto w-full max-w-[820px]"
-            >
-              <ResumeRenderer
-              template={
-                template
-              }
-              accentColor={
-                accentColor
-              }
+            {resume.editor_mode ===
+            "studio" ? (
+              studioPages.length > 0 ? (
+                <div
+                  ref={resumeRef}
+                  className="mx-auto flex w-fit min-w-fit flex-col gap-6"
+                >
+                  {studioPages.map(
+                    (page, index) => (
+                      <div
+                        key={
+                          page.id ||
+                          index
+                        }
+                      >
+                        <div className="mb-2 text-center text-xs font-semibold text-slate-500">
+                          Page {index + 1}
+                        </div>
 
-              name={
-                user?.name ||
-                "Your Name"
-              }
+                        <div
+                          data-careerflow-studio-page
+                          className="relative overflow-hidden shadow-xl"
+                          style={{
+                            width:
+                              page.width || 794,
+                            height:
+                              page.height || 1123,
+                            backgroundColor:
+                              page.backgroundColor ||
+                              "#FFFFFF",
+                          }}
+                        >
+                          <StudioResumePage
+                            elements={
+                              page.elements || []
+                            }
+                          />
+                        </div>
+                      </div>
+                    )
+                  )}
+                </div>
+              ) : (
+                <div className="mx-auto max-w-xl rounded-2xl border border-amber-200 bg-amber-50 p-6 text-center">
+                  <p className="text-sm font-semibold text-amber-800">
+                    This Studio resume does not have saved layout data yet.
+                  </p>
 
-              email={
-                user?.email ||
-                ""
-              }
-
-              title={
-                resume.title
-              }
-
-              summary={
-                resume.summary ||
-                ""
-              }
-
-              phone={
-                resume.phone ||
-                ""
-              }
-
-              location={
-                resume.location ||
-                ""
-              }
-
-              linkedinUrl={
-                resume.linkedin_url ||
-                ""
-              }
-
-              githubUrl={
-                resume.github_url ||
-                ""
-              }
-
-              portfolioUrl={
-                resume.portfolio_url ||
-                ""
-              }
-
-              skills={
-                skills
-              }
-
-              experience={
-                experience
-              }
-
-              education={
-                education
-              }
-
-              projects={
-                projects
-              }
-              />
-            </div>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      navigate(
+                        `/resumes/${resume.id}/studio`
+                      )
+                    }
+                    className="mt-4 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
+                  >
+                    Open Resume Studio
+                  </button>
+                </div>
+              )
+            ) : (
+              <div
+                ref={resumeRef}
+                className="mx-auto w-full max-w-[820px]"
+              >
+                <ResumeRenderer
+                  template={template}
+                  accentColor={accentColor}
+                  name={
+                    user?.name ||
+                    "Your Name"
+                  }
+                  email={
+                    user?.email || ""
+                  }
+                  title={resume.title}
+                  summary={
+                    resume.summary || ""
+                  }
+                  phone={
+                    resume.phone || ""
+                  }
+                  location={
+                    resume.location || ""
+                  }
+                  linkedinUrl={
+                    resume.linkedin_url ||
+                    ""
+                  }
+                  githubUrl={
+                    resume.github_url || ""
+                  }
+                  portfolioUrl={
+                    resume.portfolio_url ||
+                    ""
+                  }
+                  skills={skills}
+                  experience={experience}
+                  education={education}
+                  projects={projects}
+                />
+              </div>
+            )}
 
           </div>
 
@@ -773,6 +933,248 @@ function ResumeDetails() {
 
     </div>
   );
+}
+
+/* =========================================================
+   STUDIO RESUME PREVIEW
+========================================================= */
+
+function StudioResumePage({
+  elements,
+}: {
+  elements: ResumeCanvasElement[];
+}) {
+  return (
+    <>
+      {[...elements]
+        .filter(
+          (element) =>
+            !element.hidden
+        )
+        .sort(
+          (a, b) =>
+            a.zIndex - b.zIndex
+        )
+        .map((element) => (
+          <StudioResumeElement
+            key={element.id}
+            element={element}
+          />
+        ))}
+    </>
+  );
+}
+
+function StudioResumeElement({
+  element,
+}: {
+  element: ResumeCanvasElement;
+}) {
+  const baseStyle: CSSProperties = {
+    position: "absolute",
+    left: element.x,
+    top: element.y,
+    width: element.width,
+    height: element.height,
+    zIndex: element.zIndex,
+    opacity: element.opacity ?? 1,
+    transform: `rotate(${
+      element.rotation || 0
+    }deg)`,
+    transformOrigin: "center",
+    overflow: "hidden",
+    boxSizing: "border-box",
+  };
+
+  if (element.type === "photo") {
+    return (
+      <div style={baseStyle}>
+        {element.imageSrc ? (
+          <img
+            src={element.imageSrc}
+            alt="Resume"
+            className="h-full w-full"
+            style={{
+              objectFit:
+                element.objectFit ||
+                "cover",
+              borderRadius:
+                element.borderRadius || 0,
+              border: `${
+                element.borderWidth || 0
+              }px ${
+                element.borderStyle ||
+                "solid"
+              } ${
+                element.borderColor ||
+                "transparent"
+              }`,
+            }}
+          />
+        ) : null}
+      </div>
+    );
+  }
+
+  if (element.type === "divider") {
+    return (
+      <div
+        style={{
+          ...baseStyle,
+          backgroundColor:
+            element.backgroundColor ||
+            element.color ||
+            "#2563EB",
+          borderRadius:
+            element.borderRadius || 0,
+        }}
+      />
+    );
+  }
+
+  if (element.type === "shape") {
+    return (
+      <div
+        style={{
+          ...baseStyle,
+          backgroundColor:
+            element.backgroundColor ||
+            "#DBEAFE",
+          borderRadius:
+            element.borderRadius || 0,
+          border: `${
+            element.borderWidth || 0
+          }px ${
+            element.borderStyle ||
+            "solid"
+          } ${
+            element.borderColor ||
+            "transparent"
+          }`,
+        }}
+      />
+    );
+  }
+
+  const isLinkedSection =
+    Boolean(
+      element.customSectionId?.startsWith(
+        "careerflow:"
+      )
+    );
+
+  if (
+    element.type === "text" ||
+    element.type === "section"
+  ) {
+    const commonTextStyle:
+      CSSProperties = {
+      fontFamily:
+        element.fontFamily ||
+        "Inter, Arial, sans-serif",
+      fontSize:
+        element.fontSize || 16,
+      fontWeight:
+        element.fontWeight || 400,
+      color:
+        element.color ||
+        "#0F172A",
+      backgroundColor:
+        element.backgroundColor &&
+        element.backgroundColor !==
+          "transparent"
+          ? element.backgroundColor
+          : "transparent",
+      textAlign:
+        element.textAlign || "left",
+      lineHeight:
+        element.lineHeight || 1.35,
+      letterSpacing:
+        element.letterSpacing || 0,
+      borderRadius:
+        element.borderRadius || 0,
+      border: `${
+        element.borderWidth || 0
+      }px ${
+        element.borderStyle ||
+        "solid"
+      } ${
+        element.borderColor ||
+        "transparent"
+      }`,
+      boxSizing: "border-box",
+    };
+
+    if (
+      element.type === "section" &&
+      isLinkedSection
+    ) {
+      const lines =
+        (element.content || "").split(
+          "\n"
+        );
+
+      const heading =
+        lines[0] || "";
+
+      const body =
+        lines.slice(1).join("\n");
+
+      return (
+        <div
+          style={{
+            ...baseStyle,
+            ...commonTextStyle,
+            padding: 4,
+          }}
+        >
+          <div
+            style={{
+              fontWeight: 700,
+              textTransform:
+                "uppercase",
+              letterSpacing:
+                "0.12em",
+              fontSize: Math.max(
+                11,
+                (element.fontSize || 14) *
+                  0.9
+              ),
+            }}
+          >
+            {heading}
+          </div>
+
+          <div
+            style={{
+              marginTop: 12,
+              whiteSpace: "pre-wrap",
+              overflowWrap: "anywhere",
+              fontWeight: 400,
+            }}
+          >
+            {body}
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div
+        style={{
+          ...baseStyle,
+          ...commonTextStyle,
+          padding: 4,
+          whiteSpace: "pre-wrap",
+          overflowWrap: "anywhere",
+        }}
+      >
+        {element.content || ""}
+      </div>
+    );
+  }
+
+  return null;
 }
 
 /* =========================================================

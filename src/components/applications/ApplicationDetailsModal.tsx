@@ -1381,15 +1381,6 @@ function ApplicationDetailsModal({
                 />
 
                 <DetailItem
-                  label="Original interview date"
-                  value={
-                    formatDateTime(
-                      application.interview_date
-                    )
-                  }
-                />
-
-                <DetailItem
                   label="Created"
                   value={
                     formatDateTime(

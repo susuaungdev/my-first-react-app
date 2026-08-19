@@ -1,4 +1,6 @@
-import { apiRequest } from "./api";
+import {
+  apiRequest,
+} from "./api";
 
 /* =========================================================
    APPLICATION TYPE
@@ -17,29 +19,35 @@ export type Application = {
 
   salary: string | null;
 
-  employment_type: string | null;
+  employment_type:
+    string | null;
 
-  description: string | null;
+  description:
+    string | null;
 
-  date_applied: string | null;
+  date_applied:
+    string | null;
 
-  deadline: string | null;
+  deadline:
+    string | null;
 
   status: string;
 
-  notes: string | null;
+  notes:
+    string | null;
 
-  interview_date: string | null;
-
-  contact_person: string | null;
+  contact_person:
+    string | null;
 
   /* =====================================================
      LINKED RESUME
   ===================================================== */
 
-  resume_id: number | null;
+  resume_id:
+    number | null;
 
-  resume_title: string | null;
+  resume_title:
+    string | null;
 
   created_at: string;
 
@@ -53,15 +61,20 @@ export type Application = {
 export type ApplicationStatusHistory = {
   id: number;
 
-  application_id: number;
+  application_id:
+    number;
 
-  old_status: string | null;
+  old_status:
+    string | null;
 
-  new_status: string;
+  new_status:
+    string;
 
-  notes: string | null;
+  notes:
+    string | null;
 
-  changed_at: string;
+  changed_at:
+    string;
 };
 
 /* =========================================================
@@ -91,15 +104,47 @@ export type CreateApplicationData = {
 
   notes?: string;
 
-  interview_date?: string;
-
   contact_person?: string;
 
   /* =====================================================
      LINKED RESUME
   ===================================================== */
 
-  resume_id?: number | null;
+  resume_id?:
+    number | null;
+};
+
+/* =========================================================
+   APPLICATION LIST RESPONSE
+========================================================= */
+
+export type ApplicationsResponse = {
+  message?: string;
+
+  applications:
+    Application[];
+};
+
+/* =========================================================
+   SINGLE APPLICATION RESPONSE
+========================================================= */
+
+export type ApplicationResponse = {
+  message?: string;
+
+  application:
+    Application;
+};
+
+/* =========================================================
+   STATUS HISTORY RESPONSE
+========================================================= */
+
+export type ApplicationStatusHistoryResponse = {
+  message?: string;
+
+  history:
+    ApplicationStatusHistory[];
 };
 
 /* =========================================================
@@ -107,7 +152,7 @@ export type CreateApplicationData = {
 ========================================================= */
 
 export const getApplications =
-  async () => {
+  async (): Promise<ApplicationsResponse> => {
     return apiRequest(
       "/applications",
       {
@@ -123,7 +168,7 @@ export const getApplications =
 export const getApplicationById =
   async (
     id: number
-  ) => {
+  ): Promise<ApplicationResponse> => {
     return apiRequest(
       `/applications/${id}`,
       {
@@ -139,7 +184,7 @@ export const getApplicationById =
 export const getApplicationStatusHistory =
   async (
     id: number
-  ) => {
+  ): Promise<ApplicationStatusHistoryResponse> => {
     return apiRequest(
       `/applications/${id}/status-history`,
       {
@@ -156,15 +201,16 @@ export const createApplication =
   async (
     applicationData:
       CreateApplicationData
-  ) => {
+  ): Promise<ApplicationResponse> => {
     return apiRequest(
       "/applications",
       {
         method: "POST",
 
-        body: JSON.stringify(
-          applicationData
-        ),
+        body:
+          JSON.stringify(
+            applicationData
+          ),
       }
     );
   };
@@ -176,17 +222,19 @@ export const createApplication =
 export const updateApplication =
   async (
     id: number,
+
     applicationData:
       CreateApplicationData
-  ) => {
+  ): Promise<ApplicationResponse> => {
     return apiRequest(
       `/applications/${id}`,
       {
         method: "PUT",
 
-        body: JSON.stringify(
-          applicationData
-        ),
+        body:
+          JSON.stringify(
+            applicationData
+          ),
       }
     );
   };
@@ -198,7 +246,9 @@ export const updateApplication =
 export const deleteApplication =
   async (
     id: number
-  ) => {
+  ): Promise<{
+    message?: string;
+  }> => {
     return apiRequest(
       `/applications/${id}`,
       {

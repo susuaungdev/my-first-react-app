@@ -657,14 +657,6 @@ function Applications() {
           application.notes ||
           "",
 
-        interview_date:
-          application.interview_date
-            ? application.interview_date.slice(
-                0,
-                16
-              )
-            : "",
-
         contact_person:
           application.contact_person ||
           "",

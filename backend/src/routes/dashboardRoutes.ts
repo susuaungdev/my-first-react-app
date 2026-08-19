@@ -1,4 +1,6 @@
-import { Router } from "express";
+import {
+  Router,
+} from "express";
 
 import {
   getDashboardSummary,
@@ -8,7 +10,12 @@ import {
   authMiddleware,
 } from "../middleware/authMiddleware";
 
-const router = Router();
+const router =
+  Router();
+
+/* =========================================================
+   GET DASHBOARD SUMMARY
+========================================================= */
 
 router.get(
   "/summary",

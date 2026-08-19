@@ -3,6 +3,11 @@ import {
   Response,
 } from "express";
 
+import type {
+  ResultSetHeader,
+  RowDataPacket,
+} from "mysql2";
+
 import db from "../config/db";
 
 import {
@@ -14,7 +19,104 @@ import {
 } from "../services/notificationSyncService";
 
 /* =========================================================
-   GET ALL NOTIFICATIONS
+   DATABASE TYPES
+========================================================= */
+
+type NotificationRow =
+  RowDataPacket & {
+    id: number;
+    type: string;
+    title: string;
+    message: string;
+
+    related_type:
+      string | null;
+
+    related_id:
+      number | null;
+
+    is_read:
+      number | boolean;
+
+    action_url:
+      string | null;
+
+    created_at:
+      string | Date;
+
+    updated_at:
+      string | Date;
+  };
+
+type CountRow =
+  RowDataPacket & {
+    unread_count: number;
+  };
+
+type IdRow =
+  RowDataPacket & {
+    id: number;
+  };
+
+/* =========================================================
+   USER ID HELPER
+========================================================= */
+
+const getAuthenticatedUserId = (
+  req: Request
+) => {
+  const userId =
+    req.user?.id;
+
+  if (
+    !userId ||
+    !Number.isInteger(
+      userId
+    ) ||
+    userId <= 0
+  ) {
+    return null;
+  }
+
+  return userId;
+};
+
+/* =========================================================
+   REFRESH GENERATED NOTIFICATIONS
+
+   Synchronization/generation should never prevent users from
+   reading notifications already stored in the database.
+========================================================= */
+
+const refreshUserNotifications =
+  async (
+    userId: number
+  ) => {
+    try {
+      await syncUserNotifications(
+        userId
+      );
+    } catch (error) {
+      console.error(
+        "Notification synchronization error:",
+        error
+      );
+    }
+
+    try {
+      await generateUserNotifications(
+        userId
+      );
+    } catch (error) {
+      console.error(
+        "Notification generation error:",
+        error
+      );
+    }
+  };
+
+/* =========================================================
+   GET NOTIFICATIONS
 ========================================================= */
 
 export const getNotifications =
@@ -24,11 +126,9 @@ export const getNotifications =
   ) => {
     try {
       const userId =
-        req.user?.id;
-
-      /* =====================================================
-         AUTH
-      ===================================================== */
+        getAuthenticatedUserId(
+          req
+        );
 
       if (!userId) {
         return res.status(401).json({
@@ -38,27 +138,25 @@ export const getNotifications =
       }
 
       /* =====================================================
-         CLEAN OLD / STALE NOTIFICATIONS
+         REFRESH REMINDERS
+
+         Failure here is logged but does not stop the API.
       ===================================================== */
 
-      await syncUserNotifications(
+      await refreshUserNotifications(
         userId
       );
 
       /* =====================================================
-         GENERATE NEW REMINDERS
+         FETCH
       ===================================================== */
 
-      await generateUserNotifications(
-        userId
-      );
-
-      /* =====================================================
-         FETCH NOTIFICATIONS
-      ===================================================== */
-
-      const [rows]: any =
-        await db.execute(
+      const [
+        rows,
+      ] =
+        await db.execute<
+          NotificationRow[]
+        >(
           `
             SELECT
               id,
@@ -87,10 +185,6 @@ export const getNotifications =
           ]
         );
 
-      /* =====================================================
-         RESPONSE
-      ===================================================== */
-
       return res.status(200).json({
         message:
           "Notifications fetched successfully",
@@ -98,7 +192,7 @@ export const getNotifications =
         notifications:
           rows.map(
             (
-              row: any
+              row
             ) => ({
               ...row,
 
@@ -133,11 +227,9 @@ export const getUnreadNotificationCount =
   ) => {
     try {
       const userId =
-        req.user?.id;
-
-      /* =====================================================
-         AUTH
-      ===================================================== */
+        getAuthenticatedUserId(
+          req
+        );
 
       if (!userId) {
         return res.status(401).json({
@@ -147,32 +239,32 @@ export const getUnreadNotificationCount =
       }
 
       /*
-       * Keep unread count accurate even if this endpoint
-       * is requested before the full notification list.
+       * Ensure reminders are reasonably current.
+       *
+       * As above, generator/sync failures won't destroy the
+       * unread-count API.
        */
-
-      await syncUserNotifications(
+      await refreshUserNotifications(
         userId
       );
 
-      await generateUserNotifications(
-        userId
-      );
-
-      /* =====================================================
-         COUNT
-      ===================================================== */
-
-      const [rows]: any =
-        await db.execute(
+      const [
+        rows,
+      ] =
+        await db.execute<
+          CountRow[]
+        >(
           `
             SELECT
               COUNT(*) AS unread_count
 
             FROM notifications
 
-            WHERE user_id = ?
-            AND is_read = FALSE
+            WHERE
+              user_id = ?
+
+              AND is_read =
+                FALSE
           `,
           [
             userId,
@@ -186,7 +278,7 @@ export const getUnreadNotificationCount =
         unreadCount:
           Number(
             rows[0]
-              ?.unread_count ||
+              ?.unread_count ??
               0
           ),
       });
@@ -204,7 +296,7 @@ export const getUnreadNotificationCount =
   };
 
 /* =========================================================
-   MARK ONE NOTIFICATION AS READ
+   MARK ONE AS READ
 ========================================================= */
 
 export const markNotificationAsRead =
@@ -214,16 +306,9 @@ export const markNotificationAsRead =
   ) => {
     try {
       const userId =
-        req.user?.id;
-
-      const notificationId =
-        Number(
-          req.params.id
+        getAuthenticatedUserId(
+          req
         );
-
-      /* =====================================================
-         AUTH
-      ===================================================== */
 
       if (!userId) {
         return res.status(401).json({
@@ -232,9 +317,10 @@ export const markNotificationAsRead =
         });
       }
 
-      /* =====================================================
-         VALIDATE ID
-      ===================================================== */
+      const notificationId =
+        Number(
+          req.params.id
+        );
 
       if (
         !Number.isInteger(
@@ -249,19 +335,25 @@ export const markNotificationAsRead =
       }
 
       /* =====================================================
-         VERIFY OWNERSHIP
+         OWNERSHIP
       ===================================================== */
 
-      const [rows]: any =
-        await db.execute(
+      const [
+        rows,
+      ] =
+        await db.execute<
+          IdRow[]
+        >(
           `
             SELECT
               id
 
             FROM notifications
 
-            WHERE id = ?
-            AND user_id = ?
+            WHERE
+              id = ?
+
+              AND user_id = ?
 
             LIMIT 1
           `,
@@ -285,15 +377,19 @@ export const markNotificationAsRead =
          UPDATE
       ===================================================== */
 
-      await db.execute(
+      await db.execute<ResultSetHeader>(
         `
           UPDATE notifications
 
           SET
-            is_read = TRUE
+            is_read = TRUE,
+            updated_at =
+              CURRENT_TIMESTAMP
 
-          WHERE id = ?
-          AND user_id = ?
+          WHERE
+            id = ?
+
+            AND user_id = ?
         `,
         [
           notificationId,
@@ -319,7 +415,7 @@ export const markNotificationAsRead =
   };
 
 /* =========================================================
-   MARK ALL NOTIFICATIONS AS READ
+   MARK ALL AS READ
 ========================================================= */
 
 export const markAllNotificationsAsRead =
@@ -329,11 +425,9 @@ export const markAllNotificationsAsRead =
   ) => {
     try {
       const userId =
-        req.user?.id;
-
-      /* =====================================================
-         AUTH
-      ===================================================== */
+        getAuthenticatedUserId(
+          req
+        );
 
       if (!userId) {
         return res.status(401).json({
@@ -342,20 +436,23 @@ export const markAllNotificationsAsRead =
         });
       }
 
-      /* =====================================================
-         UPDATE ALL
-      ===================================================== */
-
-      const [result]: any =
-        await db.execute(
+      const [
+        result,
+      ] =
+        await db.execute<ResultSetHeader>(
           `
             UPDATE notifications
 
             SET
-              is_read = TRUE
+              is_read = TRUE,
+              updated_at =
+                CURRENT_TIMESTAMP
 
-            WHERE user_id = ?
-            AND is_read = FALSE
+            WHERE
+              user_id = ?
+
+              AND is_read =
+                FALSE
           `,
           [
             userId,
@@ -396,16 +493,9 @@ export const deleteNotification =
   ) => {
     try {
       const userId =
-        req.user?.id;
-
-      const notificationId =
-        Number(
-          req.params.id
+        getAuthenticatedUserId(
+          req
         );
-
-      /* =====================================================
-         AUTH
-      ===================================================== */
 
       if (!userId) {
         return res.status(401).json({
@@ -414,9 +504,10 @@ export const deleteNotification =
         });
       }
 
-      /* =====================================================
-         VALIDATE ID
-      ===================================================== */
+      const notificationId =
+        Number(
+          req.params.id
+        );
 
       if (
         !Number.isInteger(
@@ -430,17 +521,17 @@ export const deleteNotification =
         });
       }
 
-      /* =====================================================
-         DELETE
-      ===================================================== */
-
-      const [result]: any =
-        await db.execute(
+      const [
+        result,
+      ] =
+        await db.execute<ResultSetHeader>(
           `
             DELETE FROM notifications
 
-            WHERE id = ?
-            AND user_id = ?
+            WHERE
+              id = ?
+
+              AND user_id = ?
           `,
           [
             notificationId,

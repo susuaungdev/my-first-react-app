@@ -22,12 +22,26 @@ type SavedJobFormProps = {
 
   onCreated?: (
     savedJob: SavedJob
-  ) => void;
+  ) => void | Promise<void>;
 
   onUpdated?: (
     savedJob: SavedJob
-  ) => void;
+  ) => void | Promise<void>;
 };
+
+/* =========================================================
+   EMPLOYMENT TYPES
+========================================================= */
+
+const employmentTypes = [
+  "Full-time",
+  "Part-time",
+  "Contract",
+  "Internship",
+  "Temporary",
+  "Freelance",
+  "Other",
+];
 
 /* =========================================================
    SAVED JOB FORM
@@ -43,7 +57,7 @@ function SavedJobForm({
     Boolean(savedJob);
 
   /* =========================================================
-     FORM STATE
+     QUICK SAVE STATE
   ========================================================= */
 
   const [
@@ -61,6 +75,30 @@ function SavedJobForm({
     savedJob?.job_title ||
       ""
   );
+
+  const [
+    jobUrl,
+    setJobUrl,
+  ] = useState(
+    savedJob?.job_url ||
+      ""
+  );
+
+  const [
+    deadline,
+    setDeadline,
+  ] = useState(
+    savedJob?.deadline
+      ? savedJob.deadline.slice(
+          0,
+          10
+        )
+      : ""
+  );
+
+  /* =========================================================
+     OPTIONAL DETAILS
+  ========================================================= */
 
   const [
     location,
@@ -87,14 +125,6 @@ function SavedJobForm({
   );
 
   const [
-    jobUrl,
-    setJobUrl,
-  ] = useState(
-    savedJob?.job_url ||
-      ""
-  );
-
-  const [
     description,
     setDescription,
   ] = useState(
@@ -103,23 +133,32 @@ function SavedJobForm({
   );
 
   const [
-    deadline,
-    setDeadline,
-  ] = useState(
-    savedJob?.deadline
-      ? savedJob.deadline.slice(
-          0,
-          10
-        )
-      : ""
-  );
-
-  const [
     notes,
     setNotes,
   ] = useState(
     savedJob?.notes ||
       ""
+  );
+
+  /* =========================================================
+     MORE DETAILS VISIBILITY
+  ========================================================= */
+
+  const [
+    showMoreDetails,
+    setShowMoreDetails,
+  ] = useState(
+    /*
+     * When editing an existing saved job, open the optional
+     * details automatically if the job already contains any.
+     */
+    Boolean(
+      savedJob?.location ||
+      savedJob?.salary ||
+      savedJob?.employment_type ||
+      savedJob?.description ||
+      savedJob?.notes
+    )
   );
 
   /* =========================================================
@@ -145,11 +184,11 @@ function SavedJobForm({
       if (
         !company.trim()
       ) {
-        setError(
-          "Company is required."
-        );
+        const message =
+          "Company is required.";
 
-        toast.error("Company is required.");
+        setError(message);
+        toast.error(message);
 
         return false;
       }
@@ -157,11 +196,11 @@ function SavedJobForm({
       if (
         !jobTitle.trim()
       ) {
-        setError(
-          "Job title is required."
-        );
+        const message =
+          "Job title is required.";
 
-        toast.error("Job title is required.");
+        setError(message);
+        toast.error(message);
 
         return false;
       }
@@ -170,15 +209,27 @@ function SavedJobForm({
         jobUrl.trim()
       ) {
         try {
-          new URL(
-            jobUrl.trim()
-          );
-        } catch {
-          setError(
-            "Please enter a valid job URL."
-          );
+          const parsedUrl =
+            new URL(
+              jobUrl.trim()
+            );
 
-          toast.error("Please enter a valid job URL.");
+          if (
+            ![
+              "http:",
+              "https:",
+            ].includes(
+              parsedUrl.protocol
+            )
+          ) {
+            throw new Error();
+          }
+        } catch {
+          const message =
+            "Please enter a valid job URL.";
+
+          setError(message);
+          toast.error(message);
 
           return false;
         }
@@ -214,6 +265,11 @@ function SavedJobForm({
         job_title:
           jobTitle.trim(),
 
+        job_url:
+          jobUrl.trim(),
+
+        deadline,
+
         location:
           location.trim(),
 
@@ -223,13 +279,8 @@ function SavedJobForm({
         employment_type:
           employmentType,
 
-        job_url:
-          jobUrl.trim(),
-
         description:
           description.trim(),
-
-        deadline,
 
         notes:
           notes.trim(),
@@ -237,11 +288,10 @@ function SavedJobForm({
 
       try {
         setLoading(true);
-
         setError("");
 
         /* =====================================================
-           EDIT EXISTING JOB
+           UPDATE EXISTING SAVED JOB
         ===================================================== */
 
         if (
@@ -253,6 +303,10 @@ function SavedJobForm({
               savedJob.id,
               payload
             );
+
+          toast.success(
+            "Saved job updated."
+          );
 
           if (
             onUpdated
@@ -268,13 +322,17 @@ function SavedJobForm({
         }
 
         /* =====================================================
-           CREATE NEW JOB
+           CREATE SAVED JOB
         ===================================================== */
 
         const response =
           await createSavedJob(
             payload
           );
+
+        toast.success(
+          "Job saved successfully."
+        );
 
         if (
           onCreated
@@ -285,6 +343,7 @@ function SavedJobForm({
         } else {
           onClose();
         }
+
       } catch (error) {
         console.error(
           isEditMode
@@ -301,15 +360,20 @@ function SavedJobForm({
             error.message
           );
 
-          toast.error(error.message);
+          toast.error(
+            error.message
+          );
         } else {
-          const message = isEditMode
-            ? "Failed to update saved job."
-            : "Failed to save job.";
+          const message =
+            isEditMode
+              ? "Failed to update saved job."
+              : "Failed to save job.";
 
           setError(message);
+
           toast.error(message);
         }
+
       } finally {
         setLoading(false);
       }
@@ -328,9 +392,9 @@ function SavedJobForm({
             HEADER
         ===================================================== */}
 
-        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white px-6 py-5">
+        <div className="sticky top-0 z-20 flex items-center justify-between border-b border-slate-200 bg-white px-6 py-5">
 
-          <div>
+          <div className="min-w-0">
 
             <p className="text-sm font-semibold text-blue-600">
               Saved jobs
@@ -343,17 +407,23 @@ function SavedJobForm({
             </h2>
 
             <p className="mt-1 text-sm text-slate-500">
-              Keep interesting opportunities organized before you apply.
+              {isEditMode
+                ? "Update the opportunity details you want to remember."
+                : "Save an opportunity now and add more details later."}
             </p>
 
           </div>
 
           <button
             type="button"
-            onClick={onClose}
-            disabled={loading}
-            className="flex h-9 w-9 items-center justify-center rounded-lg text-xl text-slate-500 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+            onClick={
+              onClose
+            }
+            disabled={
+              loading
+            }
             aria-label="Close saved job form"
+            className="ml-4 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-xl text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-50"
           >
             ×
           </button>
@@ -368,28 +438,38 @@ function SavedJobForm({
           onSubmit={
             handleSubmit
           }
-          className="space-y-6 p-6"
+          className="p-6"
         >
 
-          {/* ERROR */}
+          {/* ===================================================
+              ERROR
+          =================================================== */}
 
           {error && (
-            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
               {error}
             </div>
           )}
 
           {/* ===================================================
-              JOB INFORMATION
+              QUICK SAVE
           =================================================== */}
 
           <section>
 
-            <h3 className="text-sm font-bold text-slate-900">
-              Job information
-            </h3>
+            <div>
 
-            <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <h3 className="text-sm font-bold text-slate-900">
+                Job opportunity
+              </h3>
+
+              <p className="mt-1 text-xs leading-5 text-slate-500">
+                Company and job title are the only required fields.
+              </p>
+
+            </div>
+
+            <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
 
               {/* COMPANY */}
 
@@ -399,7 +479,12 @@ function SavedJobForm({
                   htmlFor="saved-job-company"
                   className="mb-1.5 block text-sm font-medium text-slate-700"
                 >
-                  Company *
+                  Company
+
+                  <span className="ml-1 text-red-500">
+                    *
+                  </span>
+
                 </label>
 
                 <input
@@ -419,7 +504,11 @@ function SavedJobForm({
                     loading
                   }
                   placeholder="Google"
-                  className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-50"
+                  autoFocus={
+                    !isEditMode
+                  }
+                  maxLength={200}
+                  className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-50"
                 />
 
               </div>
@@ -432,7 +521,12 @@ function SavedJobForm({
                   htmlFor="saved-job-title"
                   className="mb-1.5 block text-sm font-medium text-slate-700"
                 >
-                  Job title *
+                  Job title
+
+                  <span className="ml-1 text-red-500">
+                    *
+                  </span>
+
                 </label>
 
                 <input
@@ -452,131 +546,47 @@ function SavedJobForm({
                     loading
                   }
                   placeholder="Frontend Developer"
-                  className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-50"
+                  maxLength={200}
+                  className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-50"
                 />
 
               </div>
 
-              {/* LOCATION */}
+              {/* JOB URL */}
 
-              <div>
+              <div className="sm:col-span-2">
 
                 <label
-                  htmlFor="saved-job-location"
+                  htmlFor="saved-job-url"
                   className="mb-1.5 block text-sm font-medium text-slate-700"
                 >
-                  Location
+                  Job URL
                 </label>
 
                 <input
-                  id="saved-job-location"
-                  type="text"
+                  id="saved-job-url"
+                  type="url"
                   value={
-                    location
+                    jobUrl
                   }
                   onChange={(
                     event
                   ) =>
-                    setLocation(
+                    setJobUrl(
                       event.target.value
                     )
                   }
                   disabled={
                     loading
                   }
-                  placeholder="Remote / New York"
-                  className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-50"
+                  placeholder="https://company.com/jobs/..."
+                  maxLength={2048}
+                  className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-50"
                 />
 
-              </div>
-
-              {/* SALARY */}
-
-              <div>
-
-                <label
-                  htmlFor="saved-job-salary"
-                  className="mb-1.5 block text-sm font-medium text-slate-700"
-                >
-                  Salary
-                </label>
-
-                <input
-                  id="saved-job-salary"
-                  type="text"
-                  value={
-                    salary
-                  }
-                  onChange={(
-                    event
-                  ) =>
-                    setSalary(
-                      event.target.value
-                    )
-                  }
-                  disabled={
-                    loading
-                  }
-                  placeholder="$80,000 - $100,000"
-                  className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-50"
-                />
-
-              </div>
-
-              {/* EMPLOYMENT TYPE */}
-
-              <div>
-
-                <label
-                  htmlFor="saved-job-employment-type"
-                  className="mb-1.5 block text-sm font-medium text-slate-700"
-                >
-                  Employment type
-                </label>
-
-                <select
-                  id="saved-job-employment-type"
-                  value={
-                    employmentType
-                  }
-                  onChange={(
-                    event
-                  ) =>
-                    setEmploymentType(
-                      event.target.value
-                    )
-                  }
-                  disabled={
-                    loading
-                  }
-                  className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-50"
-                >
-
-                  <option value="Full-time">
-                    Full-time
-                  </option>
-
-                  <option value="Part-time">
-                    Part-time
-                  </option>
-
-                  <option value="Contract">
-                    Contract
-                  </option>
-
-                  <option value="Internship">
-                    Internship
-                  </option>
-
-                  <option value="Temporary">
-                    Temporary
-                  </option>
-
-                  <option value="Freelance">
-                    Freelance
-                  </option>
-
-                </select>
+                <p className="mt-1.5 text-xs text-slate-400">
+                  Save the original posting so you can return to it later.
+                </p>
 
               </div>
 
@@ -617,152 +627,347 @@ function SavedJobForm({
           </section>
 
           {/* ===================================================
-              JOB URL
+              MORE DETAILS TOGGLE
           =================================================== */}
 
-          <section>
-
-            <h3 className="text-sm font-bold text-slate-900">
-              Job posting
-            </h3>
-
-            <div className="mt-4">
-
-              <label
-                htmlFor="saved-job-url"
-                className="mb-1.5 block text-sm font-medium text-slate-700"
-              >
-                Job URL
-              </label>
-
-              <input
-                id="saved-job-url"
-                type="url"
-                value={
-                  jobUrl
-                }
-                onChange={(
-                  event
-                ) =>
-                  setJobUrl(
-                    event.target.value
-                  )
-                }
-                disabled={
-                  loading
-                }
-                placeholder="https://company.com/jobs/..."
-                className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-50"
-              />
-
-            </div>
-
-          </section>
-
-          {/* ===================================================
-              DESCRIPTION
-          =================================================== */}
-
-          <section>
-
-            <h3 className="text-sm font-bold text-slate-900">
-              Description
-            </h3>
-
-            <div className="mt-4">
-
-              <textarea
-                rows={5}
-                value={
-                  description
-                }
-                onChange={(
-                  event
-                ) =>
-                  setDescription(
-                    event.target.value
-                  )
-                }
-                disabled={
-                  loading
-                }
-                placeholder="Paste important details, responsibilities, requirements, or anything you want to remember..."
-                className="w-full resize-none rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-50"
-              />
-
-            </div>
-
-          </section>
-
-          {/* ===================================================
-              NOTES
-          =================================================== */}
-
-          <section>
-
-            <h3 className="text-sm font-bold text-slate-900">
-              Personal notes
-            </h3>
-
-            <div className="mt-4">
-
-              <textarea
-                rows={4}
-                value={
-                  notes
-                }
-                onChange={(
-                  event
-                ) =>
-                  setNotes(
-                    event.target.value
-                  )
-                }
-                disabled={
-                  loading
-                }
-                placeholder="Why you're interested, people to contact, preparation ideas..."
-                className="w-full resize-none rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-50"
-              />
-
-            </div>
-
-          </section>
-
-          {/* ===================================================
-              BUTTONS
-          =================================================== */}
-
-          <div className="flex flex-col-reverse gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:justify-end">
+          <div className="mt-6 border-t border-slate-100 pt-5">
 
             <button
               type="button"
-              onClick={
-                onClose
+              onClick={() =>
+                setShowMoreDetails(
+                  (
+                    current
+                  ) =>
+                    !current
+                )
               }
               disabled={
                 loading
               }
-              className="rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+              aria-expanded={
+                showMoreDetails
+              }
+              className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-left transition hover:border-slate-300 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Cancel
+
+              <div>
+
+                <p className="text-sm font-semibold text-slate-800">
+                  {showMoreDetails
+                    ? "Hide additional details"
+                    : "Add more details"}
+                </p>
+
+                <p className="mt-0.5 text-xs text-slate-500">
+                  Location, salary, employment type, description and notes.
+                </p>
+
+              </div>
+
+              <span
+                className={`ml-4 text-lg text-slate-500 transition-transform ${
+                  showMoreDetails
+                    ? "rotate-180"
+                    : ""
+                }`}
+                aria-hidden="true"
+              >
+                ⌄
+              </span>
+
             </button>
 
-            <button
-              type="submit"
-              disabled={
-                loading
-              }
-              className="rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {loading
-                ? isEditMode
-                  ? "Saving changes..."
-                  : "Saving job..."
-                : isEditMode
-                ? "Save Changes"
-                : "Save Job"}
-            </button>
+          </div>
+
+          {/* ===================================================
+              OPTIONAL DETAILS
+          =================================================== */}
+
+          {showMoreDetails && (
+            <section className="mt-6">
+
+              <div>
+
+                <h3 className="text-sm font-bold text-slate-900">
+                  Additional details
+                </h3>
+
+                <p className="mt-1 text-xs leading-5 text-slate-500">
+                  These fields are optional. Add only the details that
+                  help you compare or remember the opportunity.
+                </p>
+
+              </div>
+
+              <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
+
+                {/* LOCATION */}
+
+                <div>
+
+                  <label
+                    htmlFor="saved-job-location"
+                    className="mb-1.5 block text-sm font-medium text-slate-700"
+                  >
+                    Location
+                  </label>
+
+                  <input
+                    id="saved-job-location"
+                    type="text"
+                    value={
+                      location
+                    }
+                    onChange={(
+                      event
+                    ) =>
+                      setLocation(
+                        event.target.value
+                      )
+                    }
+                    disabled={
+                      loading
+                    }
+                    placeholder="Remote / New York"
+                    maxLength={200}
+                    className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-50"
+                  />
+
+                </div>
+
+                {/* EMPLOYMENT TYPE */}
+
+                <div>
+
+                  <label
+                    htmlFor="saved-job-employment-type"
+                    className="mb-1.5 block text-sm font-medium text-slate-700"
+                  >
+                    Employment type
+                  </label>
+
+                  <select
+                    id="saved-job-employment-type"
+                    value={
+                      employmentType
+                    }
+                    onChange={(
+                      event
+                    ) =>
+                      setEmploymentType(
+                        event.target.value
+                      )
+                    }
+                    disabled={
+                      loading
+                    }
+                    className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-50"
+                  >
+
+                    {employmentTypes.map(
+                      (
+                        type
+                      ) => (
+                        <option
+                          key={
+                            type
+                          }
+                          value={
+                            type
+                          }
+                        >
+                          {type}
+                        </option>
+                      )
+                    )}
+
+                  </select>
+
+                </div>
+
+                {/* SALARY */}
+
+                <div className="sm:col-span-2">
+
+                  <label
+                    htmlFor="saved-job-salary"
+                    className="mb-1.5 block text-sm font-medium text-slate-700"
+                  >
+                    Salary
+                  </label>
+
+                  <input
+                    id="saved-job-salary"
+                    type="text"
+                    value={
+                      salary
+                    }
+                    onChange={(
+                      event
+                    ) =>
+                      setSalary(
+                        event.target.value
+                      )
+                    }
+                    disabled={
+                      loading
+                    }
+                    placeholder="$80,000 - $100,000"
+                    maxLength={100}
+                    className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-50"
+                  />
+
+                </div>
+
+                {/* DESCRIPTION */}
+
+                <div className="sm:col-span-2">
+
+                  <label
+                    htmlFor="saved-job-description"
+                    className="mb-1.5 block text-sm font-medium text-slate-700"
+                  >
+                    Job description
+                  </label>
+
+                  <textarea
+                    id="saved-job-description"
+                    rows={4}
+                    value={
+                      description
+                    }
+                    onChange={(
+                      event
+                    ) =>
+                      setDescription(
+                        event.target.value
+                      )
+                    }
+                    disabled={
+                      loading
+                    }
+                    maxLength={10000}
+                    placeholder="Responsibilities, requirements or important details..."
+                    className="w-full resize-y rounded-xl border border-slate-300 px-4 py-3 text-sm leading-6 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-50"
+                  />
+
+                </div>
+
+                {/* NOTES */}
+
+                <div className="sm:col-span-2">
+
+                  <label
+                    htmlFor="saved-job-notes"
+                    className="mb-1.5 block text-sm font-medium text-slate-700"
+                  >
+                    Personal notes
+                  </label>
+
+                  <textarea
+                    id="saved-job-notes"
+                    rows={3}
+                    value={
+                      notes
+                    }
+                    onChange={(
+                      event
+                    ) =>
+                      setNotes(
+                        event.target.value
+                      )
+                    }
+                    disabled={
+                      loading
+                    }
+                    maxLength={10000}
+                    placeholder="Why you're interested, questions to research, people to contact..."
+                    className="w-full resize-y rounded-xl border border-slate-300 px-4 py-3 text-sm leading-6 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-50"
+                  />
+
+                </div>
+
+              </div>
+
+            </section>
+          )}
+
+          {/* ===================================================
+              UX NOTE
+          =================================================== */}
+
+          {!isEditMode && (
+            <div className="mt-6 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3">
+
+              <div className="flex gap-3">
+
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-sm shadow-sm">
+                  ♡
+                </div>
+
+                <div>
+
+                  <p className="text-sm font-semibold text-blue-900">
+                    Save first, decide later
+                  </p>
+
+                  <p className="mt-1 text-xs leading-5 text-blue-700">
+                    You can come back anytime to add more details or
+                    convert this saved job into an application.
+                  </p>
+
+                </div>
+
+              </div>
+
+            </div>
+          )}
+
+          {/* ===================================================
+              ACTIONS
+          =================================================== */}
+
+          <div className="mt-7 flex flex-col-reverse gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:items-center sm:justify-between">
+
+            <p className="hidden text-xs text-slate-400 sm:block">
+              {isEditMode
+                ? "Changes will update this saved opportunity."
+                : "You can edit this opportunity anytime."}
+            </p>
+
+            <div className="flex flex-col-reverse gap-3 sm:flex-row">
+
+              <button
+                type="button"
+                onClick={
+                  onClose
+                }
+                disabled={
+                  loading
+                }
+                className="rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="submit"
+                disabled={
+                  loading
+                }
+                className="inline-flex min-w-32 items-center justify-center rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {loading
+                  ? isEditMode
+                    ? "Saving changes..."
+                    : "Saving job..."
+                  : isEditMode
+                  ? "Save Changes"
+                  : "Save Job"}
+              </button>
+
+            </div>
 
           </div>
 

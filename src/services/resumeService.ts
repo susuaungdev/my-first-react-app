@@ -1,4 +1,6 @@
-import { apiRequest } from "./api";
+import {
+  apiRequest,
+} from "./api";
 
 /* =========================================================
    TEMPLATE TYPES
@@ -10,7 +12,17 @@ export type ResumeTemplate =
   | "professional"
   | "minimal"
   | "executive"
-  | "creative";
+  | "creative"
+  | "elegant"
+  | "bold"
+  | "sidebar"
+  | "compact"
+  | "serif"
+  | "contemporary";
+
+/* =========================================================
+   LEGACY ACCENT COLORS
+========================================================= */
 
 export type ResumeAccentColor =
   | "blue"
@@ -21,39 +33,260 @@ export type ResumeAccentColor =
   | "orange";
 
 /* =========================================================
-   RESUME EXPERIENCE
+   EDITOR MODE
+========================================================= */
+
+export type ResumeEditorMode =
+  | "builder"
+  | "studio";
+
+/* =========================================================
+   EXPERIENCE
 ========================================================= */
 
 export type ResumeExperience = {
   company: string;
+
   job_title: string;
+
   location?: string;
+
   start_date?: string;
+
   end_date?: string;
+
   currently_working?: boolean;
+
   description?: string;
 };
 
 /* =========================================================
-   RESUME EDUCATION
+   EDUCATION
 ========================================================= */
 
 export type ResumeEducation = {
   school: string;
+
   degree?: string;
+
   field_of_study?: string;
+
   start_date?: string;
+
   end_date?: string;
 };
 
 /* =========================================================
-   RESUME PROJECT
+   PROJECT
 ========================================================= */
 
 export type ResumeProject = {
   name: string;
+
   description?: string;
+
   url?: string;
+};
+
+/* =========================================================
+   CUSTOM SECTION
+========================================================= */
+
+export type ResumeCustomSection = {
+  id: string;
+
+  title: string;
+
+  content: string;
+};
+
+/* =========================================================
+   BUILDER DESIGN SETTINGS
+========================================================= */
+
+export type ResumeDesignSettings = {
+  primary_color: string;
+
+  heading_color: string;
+
+  body_color: string;
+
+  background_color: string;
+
+  font_family: string;
+
+  base_font_size: number;
+
+  heading_scale: number;
+
+  line_height: number;
+
+  section_spacing: number;
+
+  photo_shape:
+    | "circle"
+    | "rounded"
+    | "square";
+
+  hidden_sections: string[];
+};
+
+/* =========================================================
+   DESIGN STUDIO ELEMENT TYPES
+========================================================= */
+
+export type ResumeCanvasElementType =
+  | "text"
+  | "photo"
+  | "section"
+  | "divider"
+  | "shape";
+
+/* =========================================================
+   DESIGN STUDIO SECTION TYPES
+========================================================= */
+
+export type ResumeCanvasSectionType =
+  | "summary"
+  | "experience"
+  | "education"
+  | "skills"
+  | "projects"
+  | "custom";
+
+/* =========================================================
+   TEXT ALIGNMENT
+========================================================= */
+
+export type ResumeTextAlign =
+  | "left"
+  | "center"
+  | "right";
+
+/* =========================================================
+   RESUME CANVAS ELEMENT
+========================================================= */
+
+export type ResumeCanvasElement = {
+  id: string;
+
+  type:
+    ResumeCanvasElementType;
+
+  x: number;
+
+  y: number;
+
+  width: number;
+
+  height: number;
+
+  rotation: number;
+
+  zIndex: number;
+
+  /* =====================================================
+     TEXT OPTIONS
+  ===================================================== */
+
+  content?: string;
+
+  fontFamily?: string;
+
+  fontSize?: number;
+
+  fontWeight?: number;
+
+  color?: string;
+
+  backgroundColor?: string;
+
+  textAlign?:
+    ResumeTextAlign;
+
+  lineHeight?: number;
+
+  letterSpacing?: number;
+
+  /* =====================================================
+     SECTION OPTIONS
+  ===================================================== */
+
+  sectionType?:
+    ResumeCanvasSectionType;
+
+  customSectionId?:
+    string;
+
+  /* =====================================================
+     PHOTO OPTIONS
+  ===================================================== */
+
+  imageSrc?: string | null;
+
+  objectFit?:
+    | "cover"
+    | "contain";
+
+  borderRadius?: number;
+
+  /* =====================================================
+     SHAPE / BORDER OPTIONS
+  ===================================================== */
+
+  borderColor?: string;
+
+  borderWidth?: number;
+
+  borderStyle?:
+    | "solid"
+    | "dashed"
+    | "dotted";
+
+  opacity?: number;
+
+  /* =====================================================
+     STATE
+  ===================================================== */
+
+  locked?: boolean;
+
+  hidden?: boolean;
+};
+
+/* =========================================================
+   CANVAS PAGE
+========================================================= */
+
+export type ResumeCanvasPage = {
+  id: string;
+
+  width: number;
+
+  height: number;
+
+  backgroundColor: string;
+
+  elements:
+    ResumeCanvasElement[];
+};
+
+/* =========================================================
+   CANVAS DATA
+========================================================= */
+
+export type ResumeCanvasData = {
+  version: number;
+
+  pageSize:
+    | "A4"
+    | "LETTER";
+
+  pages:
+    ResumeCanvasPage[];
+
+  selectedElementId?:
+    string | null;
 };
 
 /* =========================================================
@@ -65,19 +298,26 @@ export type Resume = {
 
   title: string;
 
-  summary: string | null;
+  summary:
+    string | null;
 
-  phone: string | null;
+  phone:
+    string | null;
 
-  location: string | null;
+  location:
+    string | null;
 
-  linkedin_url: string | null;
+  linkedin_url:
+    string | null;
 
-  github_url: string | null;
+  github_url:
+    string | null;
 
-  portfolio_url: string | null;
+  portfolio_url:
+    string | null;
 
-  skills: string | null;
+  skills:
+    string | null;
 
   experience:
     | ResumeExperience[]
@@ -94,17 +334,51 @@ export type Resume = {
     | string
     | null;
 
-  template: ResumeTemplate;
+  template:
+    ResumeTemplate;
 
-  accent_color: ResumeAccentColor;
+  accent_color:
+    ResumeAccentColor;
 
-  created_at: string;
+  profile_image:
+    string | null;
 
-  updated_at: string;
+  custom_sections:
+    | ResumeCustomSection[]
+    | string
+    | null;
+
+  design_settings:
+    | ResumeDesignSettings
+    | string
+    | null;
+
+  section_order:
+    | string[]
+    | string
+    | null;
+
+  /* =====================================================
+     DESIGN STUDIO
+  ===================================================== */
+
+  editor_mode:
+    ResumeEditorMode;
+
+  canvas_data:
+    | ResumeCanvasData
+    | string
+    | null;
+
+  created_at:
+    string;
+
+  updated_at:
+    string;
 };
 
 /* =========================================================
-   RESUME PAYLOAD
+   CREATE / UPDATE PAYLOAD
 ========================================================= */
 
 export type ResumePayload = {
@@ -124,15 +398,42 @@ export type ResumePayload = {
 
   skills?: string;
 
-  experience?: ResumeExperience[];
+  experience?:
+    ResumeExperience[];
 
-  education?: ResumeEducation[];
+  education?:
+    ResumeEducation[];
 
-  projects?: ResumeProject[];
+  projects?:
+    ResumeProject[];
 
-  template?: ResumeTemplate;
+  template?:
+    ResumeTemplate;
 
-  accent_color?: ResumeAccentColor;
+  accent_color?:
+    ResumeAccentColor;
+
+  profile_image?:
+    string | null;
+
+  custom_sections?:
+    ResumeCustomSection[];
+
+  design_settings?:
+    ResumeDesignSettings;
+
+  section_order?:
+    string[];
+
+  /* =====================================================
+     DESIGN STUDIO
+  ===================================================== */
+
+  editor_mode?:
+    ResumeEditorMode;
+
+  canvas_data?:
+    ResumeCanvasData | null;
 };
 
 /* =========================================================
@@ -142,13 +443,15 @@ export type ResumePayload = {
 export type ResumeListResponse = {
   message: string;
 
-  resumes: Resume[];
+  resumes:
+    Resume[];
 };
 
 export type ResumeResponse = {
   message: string;
 
-  resume: Resume;
+  resume:
+    Resume;
 };
 
 export type CreateResumeResponse = {
@@ -162,15 +465,33 @@ export type ResumeActionResponse = {
 };
 
 /* =========================================================
+   RESUME EDIT ROUTE
+========================================================= */
+
+export const getResumeEditPath = (
+  resume: Pick<
+    Resume,
+    "id" | "editor_mode"
+  >
+) => {
+  return resume.editor_mode === "studio"
+    ? `/resumes/${resume.id}/studio`
+    : `/resumes/${resume.id}/edit`;
+};
+
+/* =========================================================
    GET ALL RESUMES
 ========================================================= */
 
 export const getResumes =
-  async (): Promise<ResumeListResponse> => {
+  async (): Promise<
+    ResumeListResponse
+  > => {
     return apiRequest(
       "/resumes",
       {
-        method: "GET",
+        method:
+          "GET",
       }
     );
   };
@@ -182,11 +503,14 @@ export const getResumes =
 export const getResumeById =
   async (
     id: number
-  ): Promise<ResumeResponse> => {
+  ): Promise<
+    ResumeResponse
+  > => {
     return apiRequest(
       `/resumes/${id}`,
       {
-        method: "GET",
+        method:
+          "GET",
       }
     );
   };
@@ -197,16 +521,21 @@ export const getResumeById =
 
 export const createResume =
   async (
-    resumeData: ResumePayload
-  ): Promise<CreateResumeResponse> => {
+    resumeData:
+      ResumePayload
+  ): Promise<
+    CreateResumeResponse
+  > => {
     return apiRequest(
       "/resumes",
       {
-        method: "POST",
+        method:
+          "POST",
 
-        body: JSON.stringify(
-          resumeData
-        ),
+        body:
+          JSON.stringify(
+            resumeData
+          ),
       }
     );
   };
@@ -218,16 +547,22 @@ export const createResume =
 export const updateResume =
   async (
     id: number,
-    resumeData: ResumePayload
-  ): Promise<ResumeActionResponse> => {
+
+    resumeData:
+      ResumePayload
+  ): Promise<
+    ResumeActionResponse
+  > => {
     return apiRequest(
       `/resumes/${id}`,
       {
-        method: "PUT",
+        method:
+          "PUT",
 
-        body: JSON.stringify(
-          resumeData
-        ),
+        body:
+          JSON.stringify(
+            resumeData
+          ),
       }
     );
   };
@@ -239,11 +574,14 @@ export const updateResume =
 export const deleteResume =
   async (
     id: number
-  ): Promise<ResumeActionResponse> => {
+  ): Promise<
+    ResumeActionResponse
+  > => {
     return apiRequest(
       `/resumes/${id}`,
       {
-        method: "DELETE",
+        method:
+          "DELETE",
       }
     );
   };

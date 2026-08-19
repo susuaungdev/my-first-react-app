@@ -7,43 +7,46 @@ import {
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+
 import Dashboard from "./pages/Dashboard";
 import Applications from "./pages/Applications";
 import Profile from "./pages/Profile";
+
 import Resumes from "./pages/Resumes";
 import CreateResume from "./pages/CreateResume";
-
-import ProtectedRoute from "./components/ProtectedRoute";
 import ResumeDetails from "./pages/ResumeDetails";
 import EditResume from "./pages/EditResume";
+import ResumeDesignStudio from "./pages/ResumeDesignStudio";
+
 import Interviews from "./pages/Interviews";
 import SavedJobs from "./pages/SavedJobs";
 import Analytics from "./pages/Analytics";
+
+import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* PUBLIC */}
 
-        {/* HOME */}
         <Route
           path="/"
           element={<Home />}
         />
 
-        {/* LOGIN */}
         <Route
           path="/login"
           element={<Login />}
         />
 
-        {/* REGISTER */}
         <Route
           path="/register"
           element={<Register />}
         />
 
         {/* DASHBOARD */}
+
         <Route
           path="/dashboard"
           element={
@@ -54,6 +57,7 @@ function App() {
         />
 
         {/* APPLICATIONS */}
+
         <Route
           path="/applications"
           element={
@@ -63,7 +67,41 @@ function App() {
           }
         />
 
+        {/* INTERVIEWS */}
+
+        <Route
+          path="/interviews"
+          element={
+            <ProtectedRoute>
+              <Interviews />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* SAVED JOBS */}
+
+        <Route
+          path="/saved-jobs"
+          element={
+            <ProtectedRoute>
+              <SavedJobs />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ANALYTICS */}
+
+        <Route
+          path="/analytics"
+          element={
+            <ProtectedRoute>
+              <Analytics />
+            </ProtectedRoute>
+          }
+        />
+
         {/* PROFILE */}
+
         <Route
           path="/profile"
           element={
@@ -73,57 +111,65 @@ function App() {
           }
         />
 
+        {/* RESUMES */}
+
         <Route
-        path="/resumes"
-        element={
-          <ProtectedRoute>
-            <Resumes />
-          </ProtectedRoute>
-        }
-      />
+          path="/resumes"
+          element={
+            <ProtectedRoute>
+              <Resumes />
+            </ProtectedRoute>
+          }
+        />
 
-      <Route
-        path="/resumes/new"
-        element={
-          <ProtectedRoute>
-            <CreateResume />
-          </ProtectedRoute>
-        }
-      />
+        <Route
+          path="/resumes/new"
+          element={
+            <ProtectedRoute>
+              <CreateResume />
+            </ProtectedRoute>
+          }
+        />
 
-      <Route
-        path="/resumes/:id"
-        element={
-          <ProtectedRoute>
-            <ResumeDetails />
-          </ProtectedRoute>
-        }
-      />
-      
-      <Route
-        path="/resumes/:id/edit"
-        element={
-          <ProtectedRoute>
-            <EditResume />
-          </ProtectedRoute>
-        }
-      />
+        {/* Create a new free-layout Studio resume */}
 
-      <Route
-        path="/interviews"
-        element={<Interviews />}
-      />
+        <Route
+          path="/resumes/studio"
+          element={
+            <ProtectedRoute>
+              <ResumeDesignStudio />
+            </ProtectedRoute>
+          }
+        />
 
-      <Route
-        path="/saved-jobs"
-        element={<SavedJobs />}
-      />
+        {/* Continue editing an existing Studio resume */}
 
-      <Route
-        path="/analytics"
-        element={<Analytics />}
-      />
+        <Route
+          path="/resumes/:id/studio"
+          element={
+            <ProtectedRoute>
+              <ResumeDesignStudio />
+            </ProtectedRoute>
+          }
+        />
 
+        <Route
+          path="/resumes/:id/edit"
+          element={
+            <ProtectedRoute>
+              <EditResume />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/resumes/:id"
+          element={
+            <ProtectedRoute>
+              <ResumeDetails />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
     </BrowserRouter>
   );

@@ -1,4 +1,10 @@
-import { apiRequest } from "./api";
+import {
+  apiRequest,
+} from "./api";
+
+/* =========================================================
+   DASHBOARD SUMMARY TYPE
+========================================================= */
 
 export type DashboardSummary = {
   totalApplications: number;
@@ -6,6 +12,10 @@ export type DashboardSummary = {
   offers: number;
   resumes: number;
 };
+
+/* =========================================================
+   RECENT APPLICATION TYPE
+========================================================= */
 
 export type RecentApplication = {
   id: number;
@@ -17,6 +27,10 @@ export type RecentApplication = {
   created_at: string;
 };
 
+/* =========================================================
+   DASHBOARD RESPONSE TYPE
+========================================================= */
+
 export type DashboardResponse = {
   message: string;
 
@@ -25,9 +39,12 @@ export type DashboardResponse = {
   recentApplications: RecentApplication[];
 };
 
+/* =========================================================
+   GET DASHBOARD SUMMARY
+========================================================= */
+
 export const getDashboardSummary =
   async (): Promise<DashboardResponse> => {
-
     return apiRequest(
       "/dashboard/summary",
       {
