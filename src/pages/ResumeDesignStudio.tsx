@@ -2884,18 +2884,6 @@ function ResumeDesignStudio() {
         return `${Date.now()}`;
       }
     };
-
-  const markCurrentAsSaved =
-    () => {
-      lastSavedSignatureRef.current =
-        getDocumentSignature();
-
-      baselineReadyRef.current =
-        true;
-
-      setSaveStatus("saved");
-    };
-
   useEffect(() => {
     if (loadingResume) {
       return;
